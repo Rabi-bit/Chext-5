@@ -4,164 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CHEXT DIGITAL | AI-OS</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    
     <style>
-        :root { --bg: #000000; --accent: #00ff88; --rabi: #bc13fe; --glass: rgba(255,255,255,0.05); }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; overflow-x: hidden; }
+        :root { --bg: #000; --accent: #00ff88; --rabi: #bc13fe; --card: #111; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: var(--bg); color: #fff; margin: 0; padding: 0; line-height: 1.6; }
         
-        /* Layout */
-        .page { display: none; padding: 20px; min-height: 100vh; animation: fadeIn 0.4s ease; }
-        .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Fixed Page Controller */
+        .page { display: none; min-height: 100vh; padding: 20px; width: 100%; position: absolute; top: 0; left: 0; }
+        .active { display: block !important; position: relative; }
 
-        /* Components */
-        .glass-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-        input, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; background: #111; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 16px; border-radius: 30px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        /* UI Elements */
+        .glass-card { background: var(--card); border: 1px solid #222; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #050505; color: #fff; font-size: 16px; }
+        button { width: 100%; padding: 16px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; font-size: 14px; }
         .btn-main { background: var(--accent); color: #000; }
         .btn-rabi { background: var(--rabi); color: #fff; }
-
-        /* AI Elements */
-        .ai-status { font-size: 10px; color: var(--accent); letter-spacing: 2px; text-align: center; margin-bottom: 20px; }
-        .pulse { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
+        
+        /* AI Pulse Effect */
+        .pulse { border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+        .status-bar { font-size: 10px; text-align: center; color: var(--accent); letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; }
         
         /* Dashboard Widgets */
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mini-card { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #222; font-size: 12px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .widget { background: #0a0a0a; padding: 15px; border-radius: 12px; border: 1px solid #222; font-size: 11px; }
     </style>
 </head>
 <body>
 
-<div id="ai_notifier" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:10px 20px; border-radius:20px; font-weight:bold; z-index:9999; display:none;">AI: OPTIMIZING CORE...</div>
+<div id="ai_pop" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:8px 20px; border-radius:20px; font-size:12px; font-weight:bold; z-index:1000; display:none;">AI: SYNCHRONIZING</div>
 
-<div id="splashPage" class="page active" style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
-    <h1 style="font-size:3rem; letter-spacing:10px; margin-bottom:0; color:var(--accent);">CHEXT</h1>
-    <p style="letter-spacing:5px; opacity:0.5; margin-top:5px;">DIGITAL OS</p>
-    <div class="ai-status">ADAPTIVE INTELLIGENCE ACTIVE</div>
-    <button onclick="nav('loginPage')" class="btn-main" style="width:250px;">INITIALIZE</button>
+<div id="splashPage" class="page active">
+    <div style="height:80vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <h1 style="font-size:3.5rem; letter-spacing:8px; color:var(--accent); margin:0;">CHEXT</h1>
+        <p style="opacity:0.4; letter-spacing:4px;">DIGITAL CORE</p>
+        <div class="status-bar">Autonomous AI Active</div>
+        <button onclick="nav('loginPage')" class="btn-main" style="width:220px; margin-top:40px;">CONNECT</button>
+    </div>
 </div>
 
 <div id="loginPage" class="page">
-    <div class="glass-card" style="max-width:400px; margin:auto; margin-top:15vh;">
-        <h2 id="loginTitle">System Auth</h2>
-        <div id="auth_step1">
-            <input type="text" id="user" placeholder="Identity">
-            <input type="password" id="pass" placeholder="Secret Key">
-            <button onclick="initOTP()" class="btn-main">Get OTP</button>
-            <p onclick="nav('adminRegPage')" style="text-align:center; font-size:12px; color:var(--accent); margin-top:15px;">New Admin? Create Organization</p>
+    <div class="glass-card" style="margin-top:10vh;">
+        <h2 style="margin-top:0;">Access Portal</h2>
+        <div id="auth1">
+            <input type="text" id="user" placeholder="Identity / Admin / Worker">
+            <input type="password" id="pass" placeholder="Security Key">
+            <button onclick="initOTP()" class="btn-main">Verify Identity</button>
+            <p onclick="nav('regPage')" style="text-align:center; color:var(--accent); font-size:12px; margin-top:20px;">Register New Organization</p>
         </div>
-        <div id="auth_step2" style="display:none;">
-            <p style="color:var(--accent); text-align:center;">OTP: <span id="otp_val">0000</span></p>
-            <input type="number" id="otp_input" placeholder="Enter 4-digit code">
-            <button onclick="finalizeLogin()" class="btn-main">Verify & Enter</button>
+        <div id="auth2" style="display:none;">
+            <p style="text-align:center;">Security Code: <b id="otp_code" style="color:var(--accent)">0000</b></p>
+            <input type="number" id="otp_in" placeholder="4-Digit Code">
+            <button onclick="loginFinal()" class="btn-main">Unlock System</button>
         </div>
     </div>
 </div>
 
 <div id="creatorPage" class="page">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="color:var(--rabi)">GOD MODE: RABI</h2>
-        <button onclick="location.reload()" style="width:70px; font-size:10px; background:#333;">OUT</button>
+        <h2 style="color:var(--rabi)">God: Rabi</h2>
+        <button onclick="location.reload()" style="width:60px; font-size:10px; background:#222;">EXIT</button>
     </div>
-    
     <div class="glass-card pulse">
-        <h3>Master Billing & AI Config</h3>
-        <label>Admin Access Fee ($)</label>
-        <input type="number" id="bill_rate" value="50">
-        <label>System-Wide API Key</label>
-        <input type="text" id="master_api" placeholder="NEWS/WEATHER KEY">
-        <button class="btn-rabi" onclick="aiAlert('Global System Updated')">Deploy Settings</button>
+        <h3>System Adaptation</h3>
+        <label>Monthly Admin Fee ($)</label>
+        <input type="number" id="fee" value="50">
+        <label>Inject Logic (AI Updates)</label>
+        <textarea id="logic_box" style="height:80px;"></textarea>
+        <button onclick="aiMsg('Logic Deployed')" class="btn-rabi">Evolution Push</button>
     </div>
-
-    <h3>Active Tenants</h3>
-    <div id="tenant_list"></div>
+    <h3>Managed Tenants</h3>
+    <div id="admin_list"></div>
 </div>
 
 <div id="adminPage" class="page">
-    <div class="stat-grid">
-        <div class="mini-card" id="weather">Weather: Syncing...</div>
-        <div class="mini-card" id="news">News: Fetching...</div>
+    <div class="grid-2">
+        <div class="widget" id="wth">Weather: 72°F Clear</div>
+        <div class="widget" id="nws">News: Market Bullish</div>
     </div>
-
-    <h2 id="org_title">Admin Control</h2>
+    <h2 id="adm_org">Admin Panel</h2>
     <div class="glass-card">
-        <h3>Register Worker</h3>
+        <h3>Staff Registration</h3>
         <input type="text" id="wn" placeholder="Worker Name">
-        <input type="text" id="wr" placeholder="Role (e.g. Sales)">
-        <button onclick="addWorker()" class="btn-main">Create & Send Link</button>
+        <button onclick="addWorker()" class="btn-main">Invite Worker</button>
+        <div id="staff_list" style="margin-top:10px;"></div>
     </div>
-
     <div class="glass-card">
-        <h3>Workload & Exchange</h3>
-        <canvas id="adminChart" height="150"></canvas>
+        <canvas id="admChart" height="150"></canvas>
     </div>
 </div>
 
 <div id="workerPage" class="page">
-    <h2 id="worker_title">Worker Node</h2>
+    <h2 id="wrk_name">Worker Dash</h2>
     <div class="glass-card pulse">
-        <h3>Live GPS Tracking</h3>
-        <p id="gps_data">Awaiting Permission...</p>
-        <button onclick="trackGPS()" class="btn-main">Check-In</button>
+        <h3>Live GPS Status</h3>
+        <div id="gps_view" style="font-family:monospace; color:var(--accent);">GPS: WAITING...</div>
+        <button onclick="getGPS()" class="btn-main">Clock-In (GPS)</button>
     </div>
-
     <div class="glass-card">
-        <h3>Tasks & Progress</h3>
-        <div id="task_list">No tasks assigned.</div>
-        <input type="range" min="0" max="100" id="prog">
-        <button onclick="aiAlert('Progress Saved to Admin')" class="btn-main" style="background:#555;">Sync Status</button>
+        <h3>Task Progress</h3>
+        <input type="range" id="prog_bar" min="0" max="100">
+        <button onclick="aiMsg('Status Synced to Admin')" class="btn-main">Sync Task</button>
     </div>
 </div>
 
-<div id="adminRegPage" class="page">
+<div id="regPage" class="page">
     <div class="glass-card">
-        <h2>New Organization</h2>
-        <input type="text" id="new_org" placeholder="Org Name">
-        <input type="text" id="new_user" placeholder="Admin User">
-        <input type="password" id="new_pass" placeholder="Admin Pass">
-        <button onclick="regAdmin()" class="btn-main">Register Organization</button>
+        <h2>New Org Registration</h2>
+        <input type="text" id="ro" placeholder="Org Name">
+        <input type="text" id="ru" placeholder="Admin Username">
+        <input type="password" id="rp" placeholder="Admin Password">
+        <button onclick="saveAdmin()" class="btn-main">Launch Admin Site</button>
     </div>
 </div>
 
 <script>
-    // --- DATABASE & STATE ---
-    let db = {
-        admins: JSON.parse(localStorage.getItem('cx_admins')) || [],
-        workers: JSON.parse(localStorage.getItem('cx_workers')) || [],
-        session: null,
-        otp: "0000"
+    // DATA CORE
+    let data = {
+        admins: JSON.parse(localStorage.getItem('chx_a')) || [],
+        workers: JSON.parse(localStorage.getItem('chx_w')) || [],
+        otp: "0000",
+        cur: null
     };
 
     function nav(id) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+        const target = document.getElementById(id);
+        if(target) target.classList.add('active');
         window.scrollTo(0,0);
     }
 
-    function aiAlert(msg) {
-        const box = document.getElementById('ai_notifier');
-        box.innerText = "AI: " + msg;
-        box.style.display = 'block';
-        setTimeout(() => box.style.display = 'none', 3000);
+    function aiMsg(m) {
+        const p = document.getElementById('ai_pop');
+        p.innerText = "AI: " + m;
+        p.style.display = 'block';
+        setTimeout(() => p.style.display='none', 3000);
     }
 
-    // --- AUTH FLOW ---
+    // AUTH ENGINE
     function initOTP() {
         const u = document.getElementById('user').value;
         const p = document.getElementById('pass').value;
-        if(!u || !p) return alert("Fill credentials");
+        if(!u || !p) return alert("Required: Identity + Key");
 
-        db.otp = Math.floor(1000 + Math.random() * 9000).toString();
-        document.getElementById('otp_val').innerText = db.otp;
-        document.getElementById('auth_step1').style.display = 'none';
-        document.getElementById('auth_step2').style.display = 'block';
-        aiAlert("Verification Code Dispatched");
+        data.otp = Math.floor(1000 + Math.random() * 9000).toString();
+        document.getElementById('otp_code').innerText = data.otp;
+        document.getElementById('auth1').style.display = 'none';
+        document.getElementById('auth2').style.display = 'block';
+        aiMsg("OTP DISPATCHED");
     }
 
-    function finalizeLogin() {
-        const input = document.getElementById('otp_input').value;
-        if(input !== db.otp) return alert("Wrong OTP");
+    function loginFinal() {
+        const code = document.getElementById('otp_in').value;
+        if(code !== data.otp) return alert("Security Error: Invalid Code");
 
         const u = document.getElementById('user').value;
         const p = document.getElementById('pass').value;
@@ -170,59 +167,54 @@
             renderCreator();
             nav('creatorPage');
         } else {
-            let a = db.admins.find(x => x.user === u && x.pass === p);
-            let w = db.workers.find(x => x.name === u);
-            
-            if(a) { db.session = a; document.getElementById('org_title').innerText = a.org; renderAdmin(); nav('adminPage'); }
-            else if(w) { db.session = w; document.getElementById('worker_title').innerText = w.name; nav('workerPage'); }
-            else alert("User not found");
+            let a = data.admins.find(x => x.u === u && x.p === p);
+            let w = data.workers.find(x => x.n === u);
+            if(a) { data.cur = a; document.getElementById('adm_org').innerText = a.o; renderAdmin(); nav('adminPage'); }
+            else if(w) { data.cur = w; document.getElementById('wrk_name').innerText = w.n; nav('workerPage'); }
+            else alert("Credentials not verified.");
         }
     }
 
-    // --- LOGIC ---
-    function regAdmin() {
-        db.admins.push({
-            org: document.getElementById('new_org').value,
-            user: document.getElementById('new_user').value,
-            pass: document.getElementById('new_pass').value
-        });
-        localStorage.setItem('cx_admins', JSON.stringify(db.admins));
-        aiAlert("Organization Live");
+    // LOGIC ENGINES
+    function saveAdmin() {
+        const o = document.getElementById('ro').value;
+        const u = document.getElementById('ru').value;
+        const p = document.getElementById('rp').value;
+        if(!o || !u || !p) return;
+        data.admins.push({o, u, p});
+        localStorage.setItem('chx_a', JSON.stringify(data.admins));
+        aiMsg("Org Registered");
         nav('loginPage');
     }
 
     function addWorker() {
-        const w = { name: document.getElementById('wn').value, role: document.getElementById('wr').value, org: db.session.org };
-        db.workers.push(w);
-        localStorage.setItem('cx_workers', JSON.stringify(db.workers));
-        aiAlert("Worker Link Generated & Sent");
+        const n = document.getElementById('wn').value;
+        data.workers.push({n, o: data.cur.o});
+        localStorage.setItem('chx_w', JSON.stringify(data.workers));
+        aiMsg("Invite Link Active");
     }
 
-    function trackGPS() {
-        if (navigator.geolocation) {
+    function getGPS() {
+        if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(pos => {
-                document.getElementById('gps_data').innerText = `LAT: ${pos.coords.latitude.toFixed(4)} | LNG: ${pos.coords.longitude.toFixed(4)}`;
-                aiAlert("Location Verified by AI");
+                document.getElementById('gps_view').innerText = `LIVE: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                aiMsg("Location Logged");
             });
         }
     }
 
     function renderCreator() {
-        const list = document.getElementById('tenant_list');
-        list.innerHTML = db.admins.map(a => `<div class='glass-card'>${a.org} (Admin: ${a.user})</div>`).join('');
+        document.getElementById('admin_list').innerHTML = data.admins.map(a => `<div class='glass-card'>${a.o}</div>`).join('');
     }
 
     function renderAdmin() {
-        const ctx = document.getElementById('adminChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: { labels: ['Jan', 'Feb', 'Mar'], datasets: [{ label: 'Performance', data: [12, 19, 15], borderColor: '#00ff88' }] },
-            options: { color: '#fff' }
-        });
-        // Simulated AI Widgets
-        document.getElementById('weather').innerText = "London: 12°C, Rain";
-        document.getElementById('news').innerText = "Live: Tech Stocks Up 2%";
+        setTimeout(() => {
+            const ctx = document.getElementById('admChart');
+            if(ctx && window.Chart) {
+                new Chart(ctx, { type: 'line', data: { labels: ['W1','W2','W3'], datasets:[{ label:'Ex-Rate', data:[1.2, 1.5, 1.4], borderColor:'#00ff88' }] }, options:{ color:'#fff' }});
+            }
+        }, 500);
     }
 </script>
 </body>
-      </html>
+    </html>
