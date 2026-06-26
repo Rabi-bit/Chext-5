@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CHEXT — by Rabi</title>
+<style id="core-styles">
+:root{
+  --gold:#c9a84c; --gold-dim:#8a7038;
+  --bg:#03080f; --panel:rgba(8,14,24,0.96);
+  --danger:#e04040; --success:#40c060; --info:#4090d0;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{background:var(--bg);color:#e8e0d0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  width:100%;height:100%;overflow:hidden;position:fixed;}
+#app{position:relative;width:100%;height:100%;}
+
+/* PAGE SYSTEM - every function is its own page */
+.page{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg);
+  animation:none;}
+.page.active{display:flex;}
+.page.entering{animation:slideIn 0.28s ease;}
+
+@keyframes slideIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:translateX(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* PAGE HEADER - back/forward/home, present on every page */
+.page-header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(0,0,0,0.85);
+  border-bottom:1.5px solid var(--gold-dim);flex-shrink:0;z-index:5;}
+.nav-icon-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  color:#ccc;cursor:pointer;flex-shrink:0;}
+.nav-icon-btn:active{background:rgba(255,255,255,0.15);}
+.nav-icon-btn:disabled{opacity:0.25;}
+.page-title{flex:1;font-size:14px;font-weight:700;color:var(--gold);text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.page-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* Generic content styles */
+.content-pad{padding:14px;}
+.card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;
+  padding:14px;margin-bottom:10px;}
+.btn{background:rgba(201,168,76,0.15);border:1.5px solid var(--gold);border-radius:10px;
+  padding:11px 18px;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;text-align:center;}
+.btn:active{background:rgba(201,168,76,0.3);}
+.btn.full{width:100%;}
+.btn.secondary{border-color:#555;color:#aaa;background:rgba(255,255,255,0.04);}
+.btn:disabled{opacity:0.3;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+::-webkit-scrollbar{width:3px;} ::-webkit-scrollbar-thumb{background:#333;}
+
+/* MAIN MENU */
+#page-mainmenu .page-body{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:20px;}
+.logo-big{font-size:54px;font-weight:900;color:var(--gold);letter-spacing:4px;
+  text-shadow:0 0 30px rgba(201,168,76,0.5);margin-bottom:4px;}
+.tagline{font-size:11px;letter-spacing:3px;opacity:0.5;text-transform:uppercase;margin-bottom:6px;}
+.by-rabi{font-size:11px;color:var(--gold-dim);margin-bottom:24px;}
+.menu-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;}
+
+/* TOAST */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);
+  border-radius:10px;padding:10px 18px;font-size:13px;z-index:999;opacity:0;transition:opacity 0.25s;
+  pointer-events:none;border:1.5px solid #444;white-space:nowrap;max-width:90vw;text-overflow:ellipsis;overflow:hidden;}
+
+/* BOTTOM TAB BAR (in-game) */
+#bottom-tabs{display:flex;background:rgba(0,0,0,0.9);border-top:1.5px solid var(--gold-dim);flex-shrink:0;}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;
+  background:transparent;border:none;color:#666;font-size:9px;cursor:pointer;border-top:2px solid transparent;}
+.tab-btn.active{color:var(--gold);border-top-color:var(--gold);}
+.tab-icon{font-size:18px;}
+
+/* World/canvas world */
+#worldCanvasWrap{position:relative;flex:1;overflow:hidden;}
+#worldCanvas{display:block;width:100%;height:100%;}
+.world-overlay-top{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;
+  pointer-events:none;font-size:10px;}
+.pill{background:rgba(0,0,0,0.7);border-radius:6px;padding:4px 9px;border:1px solid rgba(255,255,255,0.15);}
+
+/* ADMIN LOGIN */
+.login-box{max-width:300px;margin:60px auto;padding:24px;background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--gold-dim);border-radius:14px;}
+.input-field{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);
+  border-radius:8px;padding:11px 12px;color:#fff;font-size:14px;margin-bottom:10px;}
+.input-field:focus{outline:none;border-color:var(--gold);}
+
+/* LIST ITEMS */
+.list-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:8px;cursor:pointer;}
+.list-item:active{background:rgba(255,255,255,0.08);}
+.list-emoji{font-size:26px;flex-shrink:0;}
+.list-text{flex:1;min-width:0;}
+.list-title{font-weight:700;font-size:13px;}
+.list-sub{font-size:11px;opacity:0.5;margin-top:2px;}
+.list-chevron{opacity:0.3;font-size:14px;}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+.toggle{width:42px;height:24px;background:#333;border-radius:12px;position:relative;cursor:pointer;flex-shrink:0;}
+.toggle.on{background:var(--gold);}
+.toggle-knob{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;
+  transition:left 0.2s;}
+.toggle.on .toggle-knob{left:21px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Pages will be injected by JS modules -->
+</div>
+<div id="toast"></div>
+<script>
+// ============================================================
+// CHEXT — CORE ENGINE — by Rabi
+// Page-based navigation, audio, vibration, local storage
+// ============================================================
+
+const App = document.getElementById('app');
+const Toast = document.getElementById('toast');
+
+// ---------- PAGE STACK (real back/forward/home) ----------
+const PageStack = {
+  history: ['mainmenu'],
+  pointer: 0,
+  registry: {}, // pageId -> {title, render, onEnter, onExit}
+
+  register(id, def){ this.registry[id] = def; },
+
+  go(id, params){
+    if(!this.registry[id]){ console.warn('Unknown page', id); return; }
+    // truncate forward history if we navigated from a back state
+    this.history = this.history.slice(0, this.pointer+1);
+    this.history.push(id);
+    this.pointer = this.history.length-1;
+    this._render(id, params);
+  },
+
+  back(){
+    if(this.pointer>0){ this.pointer--; this._render(this.history[this.pointer]); playSfx('click'); }
+  },
+  forward(){
+    if(this.pointer<this.history.length-1){ this.pointer++; this._render(this.history[this.pointer]); playSfx('click'); }
+  },
+  home(){
+    this.history=['mainmenu']; this.pointer=0; this._render('mainmenu'); playSfx('click');
+  },
+
+  _render(id, params){
+    // Call onExit for the page we're leaving, then remove ALL old pages from DOM
+    // (we keep history/pointer state in JS, not in hidden DOM nodes — this avoids duplicate-ID bugs)
+    const prevId = this._currentId;
+    if(prevId && this.registry[prevId] && this.registry[prevId].onExit) this.registry[prevId].onExit();
+    document.querySelectorAll('.page').forEach(p=>p.remove());
+
+    const pageEl = document.createElement('div');
+    pageEl.id = 'page-'+id;
+    pageEl.className = 'page';
+    App.appendChild(pageEl);
+
+    const def = this.registry[id];
+    pageEl.appendChild(this._buildHeader(def.title !== undefined ? def.title : id));
+    const body = document.createElement('div');
+    body.className = 'page-body';
+    body.id = 'body-'+id;
+    pageEl.appendChild(body);
+    pageEl.classList.add('active','entering');
+    this._currentId = id;
+    if(def.render) def.render(body, params);
+    this._updateNavButtons(pageEl);
+  },
+
+  _buildHeader(title){
+    const h = document.createElement('div');
+    h.className='page-header';
+    h.innerHTML = `
+      <button class="nav-icon-btn js-nav-back" onclick="PageStack.back()">◀</button>
+      <button class="nav-icon-btn js-nav-home" onclick="PageStack.home()">🏠</button>
+      <div class="page-title">${title}</div>
+      <button class="nav-icon-btn js-nav-forward" onclick="PageStack.forward()">▶</button>
+    `;
+    return h;
+  },
+
+  _updateNavButtons(pageEl){
+    const b=pageEl.querySelector('.js-nav-back'), f=pageEl.querySelector('.js-nav-forward');
+    if(b) b.disabled = this.pointer<=0;
+    if(f) f.disabled = this.pointer>=this.history.length-1;
+  }
+};
+window.PageStack = PageStack;
+
+// ---------- TOAST ----------
+let toastTimer=null;
+function showToast(msg, type='info'){
+  Toast.textContent = msg;
+  Toast.style.borderColor = type==='error'?'#e04040':type==='success'?'#40c060':'#4090d0';
+  Toast.style.color = type==='error'?'#ff8080':type==='success'?'#80ffa0':'#90c8ff';
+  Toast.style.opacity='1';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ Toast.style.opacity='0'; }, 2800);
+}
+window.showToast = showToast;
+
+// ---------- AUDIO (Web Audio API, procedural — no external files needed) ----------
+let actx=null, sfxOn=true, musicOn=true;
+function initAudio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+function playSfx(type){
+  if(!sfxOn || !actx) return;
+  try{
+    const t=actx.currentTime;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.connect(g); g.connect(actx.destination);
+    const presets = {
+      click:[600,0.07,0.05,'sine'],
+      coin:[900,0.16,0.09,'sine'],
+      build:[340,0.22,0.09,'triangle'],
+      era:[500,0.3,0.12,'sine'],
+      error:[200,0.18,0.09,'sawtooth'],
+      step:[180+Math.random()*40,0.05,0.025,'triangle'],
+      chat:[700,0.09,0.05,'sine'],
+      open:[450,0.12,0.06,'sine'],
+      success:[700,0.2,0.1,'sine'],
+    };
+    const [freq,dur,vol,wave]=presets[type]||presets.click;
+    o.type=wave; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    o.start(t); o.stop(t+dur);
+    if(type==='coin'){ setTimeout(()=>{ if(actx){const o2=actx.createOscillator(),g2=actx.createGain();o2.connect(g2);g2.connect(actx.destination);o2.frequency.value=1150;g2.gain.setValueAtTime(0.07,actx.currentTime);g2.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.12);o2.start();o2.stop(actx.currentTime+0.12);} },80); }
+    if(type==='era'){ [660,880].forEach((f,i)=>setTimeout(()=>{ if(actx){const o3=actx.createOscillator(),g3=actx.createGain();o3.connect(g3);g3.connect(actx.destination);o3.frequency.value=f;g3.gain.setValueAtTime(0.1,actx.currentTime);g3.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.25);o3.start();o3.stop(actx.currentTime+0.25);} },(i+1)*150)); }
+  }catch(e){}
+}
+window.playSfx = playSfx;
+window.initAudio = initAudio;
+
+// ---------- VIBRATION (real device vibration where supported) ----------
+function vibrate(pattern){
+  try{ if(Store.get('vibrationOn',true) && navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+window.vibrate = vibrate;
+
+// ---------- TEXT-TO-SPEECH (real browser speech synthesis) ----------
+let ttsVoice = null, ttsOn = true;
+function initVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  ttsVoice = voices.find(v=>/en/i.test(v.lang)) || voices[0] || null;
+}
+if('speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged = initVoices;
+  initVoices();
+}
+function speak(text, pitch=1, rate=1){
+  if(!ttsOn || !('speechSynthesis' in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if(ttsVoice) u.voice = ttsVoice;
+    u.pitch = pitch; u.rate = rate; u.volume = 0.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+window.speak = speak;
+function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} }
+window.stopSpeak = stopSpeak;
+
+// ---------- LOCAL STORAGE HELPERS ----------
+const Store = {
+  get(key, fallback){
+    try{ const v = localStorage.getItem('chext_'+key); return v!==null ? JSON.parse(v) : fallback; }
+    catch(e){ return fallback; }
+  },
+  set(key, val){
+    try{ localStorage.setItem('chext_'+key, JSON.stringify(val)); }catch(e){}
+  },
+  remove(key){ try{ localStorage.removeItem('chext_'+key); }catch(e){} }
+};
+window.Store = Store;
+
+// ---------- NUMBER FORMAT ----------
+function fmt(n){
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toLocaleString();
+}
+window.fmt = fmt;
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+window.rnd = rnd;
+
+// ---------- BOOT ----------
+document.addEventListener('click', ()=>{ initAudio(); }, {once:true});
+document.addEventListener('touchstart', ()=>{ initAudio(); }, {once:true});
+
+console.log('CHEXT core engine loaded — by Rabi');
+
+
+// ============================================================
+// CHEXT — ERA & WORLD DATA — by Rabi
+// Daily life simulation: food, fire, clothing, animals per era
+// ============================================================
+
+const ERAS = [
+  {
+    id:'stone', name:'Stone Age', year:'10,000 BCE', num:0,
+    sky:'#1a0e05', horizon:'#3d1f0a', ground:'#5c3d1e', water:'#1a3d5c',
+    accent:'#c87830', threshold:800,
+    vehicle:{id:'foot', name:'On Foot', emoji:'🚶', speedMult:1, desc:'Tribes travel by walking. No domesticated transport yet.'},
+    clothing:{name:'Animal Hide Wraps', emoji:'🦴', desc:'Tanned furs and hides wrapped and tied with sinew. Warmth is survival.'},
+    food:[
+      {name:'Roasted Mammoth Meat', emoji:'🍖', desc:'Hunted in groups, shared among the whole tribe'},
+      {name:'Foraged Berries', emoji:'🫐', desc:'Gathered by women and children daily'},
+      {name:'Raw Roots & Tubers', emoji:'🥔', desc:'Dug up and roasted in embers'},
+      {name:'River Fish', emoji:'🐟', desc:'Caught by hand or simple traps'},
+    ],
+    fire:{method:'Hand drill & flint spark', desc:'Fire is sacred and hard to start — kept burning for days, carried between camps.'},
+    animals:[
+      {name:'Woolly Mammoth', emoji:'🦣', role:'Hunted for meat, hide, bone tools, and ivory'},
+      {name:'Wild Dog', emoji:'🐺', role:'Beginning to be tamed as hunting companions'},
+      {name:'Cave Bear', emoji:'🐻', role:'Feared predator and rival for shelter caves'},
+      {name:'Wild Horse', emoji:'🐴', role:'Hunted, not yet ridden'},
+    ],
+    dailyLife:'Wake before dawn. Men hunt in groups of 6-10, tracking herds for days. Women and children forage for plants, firewood, and water. Evenings are spent around the fire — telling stories, making tools, painting cave walls. Life expectancy is ~30 years. Infant mortality is extremely high. The tribe is everything; alone, a person dies quickly.',
+    ambience:'Smoke from fires drifts through dense forest. Hunters return at dusk carrying meat. Children learn to knap flint beside the fire.',
+    historicalFact:'10,000 BCE: Humans live in small nomadic bands of 20–50 people. They hunt megafauna and gather plants, moving with the seasons. Cave art, burials, and ritual objects suggest rich spiritual lives. Fire is mastered. The bow and arrow is revolutionizing hunting. Dogs are the first domesticated animal.',
+    npcs:[
+      {id:'n1',name:'Hunter Kael',emoji:'🏹',role:'Hunter',x:180,y:310,dialog:['The mammoth herd moved north...','Trade me furs for flint tools.','Winter is coming. Stock food now.','Our tribe needs stronger shelters.']},
+      {id:'n2',name:'Elder Mara',emoji:'🌿',role:'Gatherer',x:320,y:340,dialog:['I know which berries heal wounds.','The spirits speak in the fire.','Trade berries for shelter tonight?','Teach your children to find water.']},
+      {id:'n3',name:'Shaman Rok',emoji:'🦴',role:'Shaman',x:440,y:290,dialog:['The cave paintings show our history.','Paint the hunt before you go.','Stars tell us when to plant.','Respect the animals you hunt.']},
+      {id:'n4',name:'Child Lena',emoji:'🧒',role:'Child',x:260,y:360,dialog:["Look! I found a shiny stone!",'Will you play chase with me?','Can you teach me to make fire?']},
+    ],
+    goods:[
+      {id:'fur',name:'Animal Furs',emoji:'🦊',buy:8,sell:13,desc:'Warmth & trade'},
+      {id:'flint',name:'Flint Stone',emoji:'🪨',buy:5,sell:9,desc:'Tools & weapons'},
+      {id:'meat',name:'Dried Meat',emoji:'🥩',buy:6,sell:10,desc:'Food & winter stores'},
+      {id:'berries',name:'Wild Berries',emoji:'🫐',buy:3,sell:6,desc:'Medicine & dye'},
+      {id:'bone',name:'Bone Tools',emoji:'🦴',buy:10,sell:16,desc:'Needles & scrapers'},
+      {id:'shells',name:'Shell Beads',emoji:'🐚',buy:7,sell:12,desc:'Jewelry & early currency'},
+    ],
+    buildings:[
+      {id:'cave',name:'Cave Shelter',cost:50,income:3,emoji:'🪨',desc:'Home & warmth for your tribe'},
+      {id:'firepit',name:'Fire Pit',cost:30,income:2,emoji:'🔥',desc:'Cooking, warmth, and community'},
+      {id:'dryingrack',name:'Drying Rack',cost:40,income:4,emoji:'🥩',desc:'Preserve meat for winter'},
+      {id:'stonecircle',name:'Stone Circle',cost:80,income:5,emoji:'🗿',desc:'Ritual center and gathering place'},
+    ],
+    locations:['cave','firepit','huntinggrounds','river','tribecircle'],
+    artifacts:[{name:'Carved Bone Amulet',emoji:'🦴',desc:'Worn for protection from evil spirits'},{name:'Ochre Hand Print',emoji:'🖐️',desc:'Cave wall marking — "I was here"'},{name:'Antler Harpoon',emoji:'🔱',desc:'Prized hunting tool, passed to eldest son'}],
+  },
+  {
+    id:'bronze', name:'Bronze Age', year:'3,000 BCE', num:1,
+    sky:'#0d1a2e', horizon:'#1a3a5a', ground:'#7a8a50', water:'#1e4a7a',
+    accent:'#e8c030', threshold:4000,
+    vehicle:{id:'donkey', name:'Donkey Cart', emoji:'🫏', speedMult:1.4, desc:'Donkeys and oxen pull simple carts along trade routes.'},
+    clothing:{name:'Woven Linen Tunic', emoji:'👕', desc:'Flax is spun and woven; dyed with natural pigments for status.'},
+    food:[
+      {name:'Barley Bread', emoji:'🍞', desc:'Staple of every Mesopotamian household'},
+      {name:'Beer', emoji:'🍺', desc:'Safer than water, drunk by all ages including children'},
+      {name:'Lentil Stew', emoji:'🍲', desc:'Cheap, filling, eaten by farmers and laborers'},
+      {name:'Nile Fish', emoji:'🐟', desc:'Dried and salted for trade'},
+    ],
+    fire:{method:'Hearth with bellows', desc:'Bronze smelting needs sustained high heat — bellows are a major innovation.'},
+    animals:[
+      {name:'Ox', emoji:'🐂', role:'Plowing fields — agriculture revolution'},
+      {name:'Donkey', emoji:'🫏', role:'Pack animal and cart-pulling for trade'},
+      {name:'Goat', emoji:'🐐', role:'Milk, meat, and hide'},
+      {name:'Falcon', emoji:'🦅', role:'Sacred to Egyptian religion (Horus)'},
+    ],
+    dailyLife:'A farmer rises before sunrise to work irrigated fields along the river. Scribes train for a decade to master cuneiform or hieroglyphs. Markets buzz with traders exchanging grain, cloth, and metal. Taxes are paid in grain to the temple or palace. Slavery exists, often from war captives or debt. Religion governs every part of life — temples are the largest buildings in any city.',
+    ambience:'Scribes record grain tallies. Smiths pour molten bronze. Merchants arrive by river with cedar wood and lapis lazuli.',
+    historicalFact:'3,000 BCE: Cities rise in Mesopotamia, Egypt, and the Indus Valley. Writing is invented — first as accounting records. Specialization of labor emerges: farmers, scribes, soldiers, priests, merchants. Trade networks span thousands of miles. The wheel revolutionizes transport.',
+    npcs:[
+      {id:'n1',name:'Royal Scribe',emoji:'📜',role:'Scribe',x:200,y:310,dialog:['I record the king\'s grain stores.','Writing is power — learn it.','This tablet lists 3,000 sheep.']},
+      {id:'n2',name:'Bronze Smith',emoji:'⚒️',role:'Smith',x:350,y:330,dialog:['Bronze needs tin from the far east.','My swords serve the pharaoh.','Trade me tin for finished blades.']},
+      {id:'n3',name:'River Merchant',emoji:'⛵',role:'Merchant',x:150,y:360,dialog:['I sailed from the Indus Valley.','Lapis lazuli — finest in the world.','The Nile floods bring rich soil.']},
+      {id:'n4',name:'City Guard',emoji:'🛡️',role:'Guard',x:450,y:300,dialog:['The city-state grows strong.','Bronze armor protects the king.']},
+    ],
+    goods:[
+      {id:'bronze',name:'Bronze Metal',emoji:'⚙️',buy:20,sell:32,desc:'Stronger than stone'},
+      {id:'grain',name:'Grain',emoji:'🌾',buy:8,sell:14,desc:'Tax & trade staple'},
+      {id:'lapis',name:'Lapis Lazuli',emoji:'💙',buy:35,sell:55,desc:'Luxury stone for royals'},
+      {id:'cedar',name:'Cedar Wood',emoji:'🌲',buy:15,sell:24,desc:'Ships & palaces'},
+      {id:'linen',name:'Linen Cloth',emoji:'🧵',buy:14,sell:22,desc:'Egyptian specialty'},
+      {id:'papyrus',name:'Papyrus',emoji:'📜',buy:10,sell:16,desc:'Writing material'},
+    ],
+    buildings:[
+      {id:'ziggurat',name:'Ziggurat',cost:300,income:25,emoji:'🏛️',desc:'Temple & admin center'},
+      {id:'workshop',name:'Bronze Workshop',cost:200,income:18,emoji:'⚒️',desc:'Metalworking'},
+      {id:'granary',name:'Royal Granary',cost:150,income:14,emoji:'🌾',desc:'Food storage & tax'},
+      {id:'dock',name:'River Dock',cost:180,income:16,emoji:'⛵',desc:'Trade and transport'},
+    ],
+    locations:['ziggurat','market','workshop','docks','farmfields'],
+    artifacts:[{name:'Cuneiform Tablet',emoji:'📋',desc:'Clay record of trade and law — humanity\'s first writing'},{name:'Scarab Seal',emoji:'🪲',desc:'Egyptian personal signature stamp'},{name:'Bronze Mirror',emoji:'🪞',desc:'Polished bronze disc, luxury item'}],
+  },
+  {
+    id:'iron', name:'Iron Age', year:'800 BCE', num:2,
+    sky:'#0a1520', horizon:'#1a3040', ground:'#6a7850', water:'#1a3050',
+    accent:'#d4a020', threshold:12000,
+    vehicle:{id:'horse', name:'Horse', emoji:'🐎', speedMult:2, desc:'Domesticated horses allow fast travel and cavalry warfare.'},
+    clothing:{name:'Wool Toga / Tunic', emoji:'🥻', desc:'Roman and Greek dress signals class — purple dye means royalty.'},
+    food:[
+      {name:'Olive Oil & Bread', emoji:'🫒', desc:'Mediterranean diet staple'},
+      {name:'Roman Garum (fish sauce)', emoji:'🐟', desc:'Fermented fish sauce on everything'},
+      {name:'Wine', emoji:'🍷', desc:'Watered down, drunk daily by all classes'},
+      {name:'Rice (in Han China)', emoji:'🍚', desc:'Staple of East Asian civilization'},
+    ],
+    fire:{method:'Iron forge with charcoal', desc:'Iron requires much higher heat than bronze — charcoal furnaces are perfected.'},
+    animals:[
+      {name:'War Horse', emoji:'🐎', role:'Cavalry and rapid communication'},
+      {name:'Camel', emoji:'🐪', role:'Desert trade caravans across Silk Road'},
+      {name:'Sheep', emoji:'🐑', role:'Wool for clothing and trade'},
+      {name:'Roman Eagle', emoji:'🦅', role:'Symbol of legion and empire'},
+    ],
+    dailyLife:'A Roman citizen visits the public baths and forum daily — politics, gossip, and business all happen there. Greek citizens debate in the agora; only free men vote. Slaves do most physical labor — up to a third of Rome\'s population is enslaved. Soldiers march 20 miles a day in full gear. Philosophy schools teach logic and ethics. Public executions and gladiator games are common entertainment.',
+    ambience:'Iron plows cut deep furrows. Legions drill in the forum. Philosophers debate in the agora. Ships crowd the harbor.',
+    historicalFact:'800 BCE: Iron democratizes tools and warfare. Greek democracy, Roman Republic, Persian Empire, Han Dynasty rise. Philosophy, mathematics, and law are codified. Socrates, Plato, Aristotle, Confucius, and Buddha all live within centuries of one another — the "Axial Age."',
+    npcs:[
+      {id:'n1',name:'Philosopher',emoji:'📚',role:'Philosopher',x:280,y:300,dialog:['The unexamined life is not worth living.','Democracy is flawed — but the best we have.']},
+      {id:'n2',name:'Roman Legionary',emoji:'⚔️',role:'Soldier',x:180,y:320,dialog:['Rome grows one battle at a time.','We conquered Gaul last season.']},
+      {id:'n3',name:'Silk Road Trader',emoji:'🐪',role:'Trader',x:350,y:310,dialog:['I came from Chang\'an — 6 months journey.','Silk for iron. Fair trade?']},
+      {id:'n4',name:'Iron Farmer',emoji:'🌾',role:'Farmer',x:420,y:340,dialog:['Iron plow turned soil bronze could not.','Tax collector came again today.']},
+    ],
+    goods:[
+      {id:'iron',name:'Iron Ore',emoji:'⛓️',buy:35,sell:55,desc:'Better than bronze'},
+      {id:'wine',name:'Amphora Wine',emoji:'🍷',buy:22,sell:35,desc:'Mediterranean trade'},
+      {id:'silk',name:'Chinese Silk',emoji:'🎀',buy:60,sell:95,desc:'From distant Han Dynasty'},
+      {id:'salt',name:'Salt',emoji:'🧂',buy:18,sell:28,desc:'Worth its weight'},
+      {id:'olives',name:'Olive Oil',emoji:'🫒',buy:25,sell:38,desc:'Greek export staple'},
+      {id:'horses',name:'War Horses',emoji:'🐎',buy:80,sell:125,desc:'Military power'},
+    ],
+    buildings:[
+      {id:'forum',name:'Forum / Agora',cost:500,income:40,emoji:'🏛️',desc:'Democracy and trade'},
+      {id:'ironforge',name:'Iron Forge',cost:400,income:32,emoji:'⚔️',desc:'Iron tools and weapons'},
+      {id:'aqueduct',name:'Aqueduct',cost:600,income:45,emoji:'💧',desc:'Clean water for the city'},
+      {id:'colosseum',name:'Arena',cost:800,income:60,emoji:'🏟️',desc:'Entertainment and power'},
+    ],
+    locations:['forum','ironforge','baths','barracks','temple'],
+    artifacts:[{name:'Roman Signet Ring',emoji:'💍',desc:'Seals letters and proves identity'},{name:'Sundial',emoji:'☀️',desc:'Tells time by shadow — public squares have huge ones'},{name:'Abacus',emoji:'🧮',desc:'Calculation device used across Eurasia'}],
+  },
+  {
+    id:'medieval', name:'Medieval Era', year:'900 CE', num:3,
+    sky:'#07111e', horizon:'#0f2030', ground:'#5a6840', water:'#0f2a4a',
+    accent:'#c07820', threshold:35000,
+    vehicle:{id:'horsecart', name:'Horse & Cart', emoji:'🐴', speedMult:1.8, desc:'Knights ride war horses; merchants use carts and wagons.'},
+    clothing:{name:'Wool Tunic & Cloak', emoji:'🧥', desc:'Layered wool, fur trim for nobility; rough sackcloth for serfs.'},
+    food:[
+      {name:'Black Bread', emoji:'🍞', desc:'Coarse rye bread, staple of peasants'},
+      {name:'Pottage', emoji:'🍲', desc:'Boiled grains and vegetables, eaten daily'},
+      {name:'Mead', emoji:'🍯', desc:'Fermented honey drink at feasts'},
+      {name:'Roasted Game', emoji:'🍗', desc:'Reserved mostly for nobility — strict forest laws'},
+    ],
+    fire:{method:'Hearth fire in the great hall', desc:'One central fire heats the whole household; chimneys are a later innovation.'},
+    animals:[
+      {name:'War Horse (Destrier)', emoji:'🐴', role:'Knights\' mounts, bred for combat'},
+      {name:'Oxen', emoji:'🐂', role:'Plowing — heavier than Roman plows'},
+      {name:'Falcon', emoji:'🦅', role:'Falconry, a noble pastime'},
+      {name:'Pig', emoji:'🐷', role:'Common peasant livestock, foraged in forests'},
+    ],
+    dailyLife:'A serf works the lord\'s fields most of the week, owing labor as rent. Sundays are for church — mandatory, the center of community. Knights train constantly for war and tournaments. Monks copy manuscripts by candlelight, preserving ancient knowledge. The Black Death (1347-1351) kills a third of Europe\'s population. Most people never travel more than 20 miles from their birthplace in their entire life.',
+    ambience:'Cathedral bells ring at dawn. Knights train in the yard. Merchants pay guild fees. Plague rumors spread from the east.',
+    historicalFact:'500–1500 CE: Feudalism structures European society. The Catholic Church dominates politics and culture. The Islamic Golden Age preserves and advances Greek knowledge. Mongol conquests reshape Eurasia. The Black Death kills 1/3 of Europe in three years.',
+    npcs:[
+      {id:'n1',name:'Knight Sir Edmund',emoji:'🗡️',role:'Knight',x:200,y:310,dialog:['I swore fealty to my lord and king.','Jousting tournament this Sunday!']},
+      {id:'n2',name:'Monk Brother Thomas',emoji:'✝️',role:'Monk',x:330,y:290,dialog:['I copy manuscripts by candlelight.','The Black Death took half our village.']},
+      {id:'n3',name:'Merchant Guilder',emoji:'💰',role:'Merchant',x:420,y:330,dialog:['Guild regulations strangle free trade!','Spice from India — worth its weight in gold.']},
+      {id:'n4',name:'Serf Johan',emoji:'🌾',role:'Serf',x:150,y:350,dialog:['We owe the lord three days\' labor weekly.','My children will be serfs too.']},
+    ],
+    goods:[
+      {id:'spice',name:'Spices',emoji:'🌶️',buy:60,sell:95,desc:'Preservation and status symbol'},
+      {id:'wool',name:'Wool Cloth',emoji:'🧶',buy:25,sell:40,desc:"England's main export"},
+      {id:'manuscripts',name:'Manuscripts',emoji:'📜',buy:80,sell:130,desc:'Islamic and Church texts'},
+      {id:'silk',name:'Silk',emoji:'🎀',buy:90,sell:145,desc:'Luxury via Silk Road'},
+      {id:'indigo',name:'Indigo Dye',emoji:'💙',buy:45,sell:70,desc:'Prized blue dye'},
+      {id:'iron',name:'Iron Weapons',emoji:'⚔️',buy:70,sell:112,desc:'Knights demand quality steel'},
+    ],
+    buildings:[
+      {id:'castle',name:'Castle Keep',cost:2000,income:130,emoji:'🏰',desc:'Military and noble power'},
+      {id:'cathedral',name:'Cathedral',cost:1500,income:100,emoji:'⛪',desc:'Faith and community'},
+      {id:'mill',name:'Watermill',cost:800,income:65,emoji:'⚙️',desc:'Grain processing'},
+      {id:'guildhall',name:'Guild Hall',cost:1200,income:85,emoji:'🏛️',desc:'Merchant networks'},
+    ],
+    locations:['castle','cathedral','guildhall','village','fields'],
+    artifacts:[{name:'Illuminated Manuscript',emoji:'📖',desc:'Hand-painted book, takes monks years to finish'},{name:'Astrolabe',emoji:'🌌',desc:'Islamic astronomical instrument for navigation'},{name:'Family Seal Ring',emoji:'💍',desc:'Wax-stamps documents with house crest'}],
+  },
+  {
+    id:'renaissance', name:'Renaissance', year:'1490 CE', num:4,
+    sky:'#091525', horizon:'#142840', ground:'#6a7850', water:'#1a3a6a',
+    accent:'#d4a820', threshold:90000,
+    vehicle:{id:'carriage', name:'Carriage', emoji:'🛺', speedMult:2.2, desc:'Spring-suspended carriages and ocean caravels for global trade.'},
+    clothing:{name:'Doublet & Hose', emoji:'👔', desc:'Elaborate tailored fabrics signal wealth; bright dyes from new trade.'},
+    food:[
+      {name:'Pasta', emoji:'🍝', desc:'Becoming an Italian staple'},
+      {name:'New World Potato', emoji:'🥔', desc:'Just arriving in Europe, not yet trusted'},
+      {name:'Chocolate (cacao)', emoji:'🍫', desc:'Brought from the Americas, drunk as bitter beverage'},
+      {name:'Spiced Roasted Meats', emoji:'🍗', desc:'Spices now affordable to the merchant class'},
+    ],
+    fire:{method:'Foundry furnace', desc:'Cannon casting and glassmaking demand precise, intense heat control.'},
+    animals:[
+      {name:'Caravel Ship Crew Animals', emoji:'🐓', role:'Chickens and goats kept aboard ships for food'},
+      {name:'Carriage Horse', emoji:'🐴', role:'Fine breeding for noble transport'},
+      {name:'Hunting Dogs', emoji:'🐕', role:'Aristocratic hunting parties'},
+    ],
+    dailyLife:'An artist apprentices for years before being allowed to paint independently. Bankers in Florence keep meticulous double-entry ledgers. Sailors risk death on voyages to unknown lands for the promise of riches. The printing press lets a literate merchant own more books than a medieval king. The Catholic Church\'s authority is challenged for the first time by Reformers like Luther.',
+    ambience:'Artists argue over perspective. Caravels prepare to cross unknown seas. The printing press runs all night.',
+    historicalFact:'1400–1600 CE: Gutenberg\'s printing press spreads knowledge at unprecedented scale. Columbus reaches the Americas. Da Vinci, Michelangelo redefine art. Banking and early capitalism emerge. The Protestant Reformation splits Christianity.',
+    npcs:[
+      {id:'n1',name:'Renaissance Artist',emoji:'🎨',role:'Artist',x:280,y:300,dialog:['I studied anatomy in secret by candlelight.','Florence is the center of the world.']},
+      {id:'n2',name:'Sea Navigator',emoji:'🧭',role:'Navigator',x:180,y:330,dialog:['Columbus sailed west — found new continents!','The world is round — I\'ve sailed it.']},
+      {id:'n3',name:'Printer Johannes',emoji:'📚',role:'Printer',x:400,y:310,dialog:['Gutenberg changed everything in 1440.','Ideas spread too fast now for the Church.']},
+      {id:'n4',name:'Medici Banker',emoji:'🏦',role:'Banker',x:340,y:345,dialog:['The Medici Bank spans all of Europe.','Double-entry bookkeeping never lies.']},
+    ],
+    goods:[
+      {id:'art',name:'Fine Art',emoji:'🎨',buy:150,sell:240,desc:'Patron investment and status'},
+      {id:'books',name:'Printed Books',emoji:'📚',buy:60,sell:95,desc:'Knowledge at scale'},
+      {id:'gold',name:'New World Gold',emoji:'🥇',buy:200,sell:320,desc:'Spanish conquest floods of gold'},
+      {id:'porcelain',name:'Porcelain',emoji:'🏺',buy:110,sell:175,desc:'Ming Dynasty export'},
+      {id:'tobacco',name:'Tobacco',emoji:'🌿',buy:70,sell:112,desc:'New World discovery'},
+      {id:'sugar',name:'Sugar',emoji:'🍬',buy:85,sell:135,desc:'From Caribbean colonies'},
+    ],
+    buildings:[
+      {id:'palace',name:'Palace',cost:5000,income:320,emoji:'🏛️',desc:'Art, power, and noble display'},
+      {id:'print',name:'Print Workshop',cost:3000,income:200,emoji:'📚',desc:'Spread ideas across Europe'},
+      {id:'bank',name:'Merchant Bank',cost:4000,income:260,emoji:'🏦',desc:'Finance and lending'},
+      {id:'shipyard',name:'Shipyard',cost:4500,income:290,emoji:'⛵',desc:'Caravels for exploration'},
+    ],
+    locations:['palace','printshop','bank','shipyard','academy'],
+    artifacts:[{name:'Pocket Watch',emoji:'⏱️',desc:'Mechanical timekeeping becomes personal'},{name:'Printed Pamphlet',emoji:'📰',desc:'Mass-produced opinion — early "social media"'},{name:'Telescope',emoji:'🔭',desc:'Galileo\'s instrument reveals the moons of Jupiter'}],
+  },
+  {
+    id:'industrial', name:'Industrial Era', year:'1820 CE', num:5,
+    sky:'#0a0d12', horizon:'#151a22', ground:'#3a3a3a', water:'#1a2535',
+    accent:'#e07828', threshold:280000,
+    vehicle:{id:'train', name:'Steam Train', emoji:'🚂', speedMult:3.5, desc:'Steam locomotives connect cities; the first real mass transport.'},
+    clothing:{name:'Factory Uniform / Top Hat', emoji:'🎩', desc:'Mass-produced clothing; class is visible by fabric quality.'},
+    food:[
+      {name:'Canned Goods', emoji:'🥫', desc:'New preservation technology feeds growing cities'},
+      {name:'Tea', emoji:'🍵', desc:'Mass-imported, fuels factory workers'},
+      {name:'White Bread', emoji:'🍞', desc:'Industrially milled flour, status symbol'},
+      {name:'Gin', emoji:'🍸', desc:'Cheap escape from brutal urban poverty'},
+    ],
+    fire:{method:'Coal-fired steam boiler', desc:'Coal-powered steam engines drive every factory, train, and ship.'},
+    animals:[
+      {name:'Pit Pony', emoji:'🐴', role:'Hauling coal carts in mine tunnels'},
+      {name:'Carriage Horse', emoji:'🐴', role:'Still the main city transport before cars'},
+      {name:'Factory Cats', emoji:'🐱', role:'Pest control in grain mills and warehouses'},
+    ],
+    dailyLife:'A factory worker rises at 5am for a 12-14 hour shift, six days a week. Children as young as five work in mines and mills. Smog blankets industrial cities; life expectancy in slums can be under 30. Telegraph wires now carry news across continents in minutes. Unions form to fight for shorter hours. The middle class grows for the first time in history — shopkeepers, clerks, engineers.',
+    ambience:'Factory whistles mark shifts. Smoke blots the sun. Children work 14-hour days. Railways connect cities overnight.',
+    historicalFact:'1760–1900 CE: Steam power industrializes the world. Child labor and urban slums are rampant. But also: railways, telegraphs, mass literacy, vaccines. Darwin publishes evolution. Marx writes Das Kapital. Colonial empires reach their peak.',
+    npcs:[
+      {id:'n1',name:'Factory Worker',emoji:'⚙️',role:'Worker',x:200,y:320,dialog:['12 hours a day, 6 days a week.','The union is our only protection.']},
+      {id:'n2',name:'Engineer Watt',emoji:'🔧',role:'Engineer',x:320,y:295,dialog:['Watt\'s steam engine changed everything.','The telegraph sends messages in seconds.']},
+      {id:'n3',name:'Factory Owner',emoji:'🎩',role:'Owner',x:430,y:310,dialog:['Efficiency is the only morality.','My mill produces 10,000 yards daily.']},
+      {id:'n4',name:'Labor Activist',emoji:'✊',role:'Activist',x:150,y:340,dialog:['Workers deserve a living wage!','The 8-hour day is our demand.']},
+    ],
+    goods:[
+      {id:'coal',name:'Coal',emoji:'🪨',buy:40,sell:65,desc:'Powers everything'},
+      {id:'steel',name:'Steel',emoji:'🔩',buy:120,sell:190,desc:'Railways and bridges'},
+      {id:'cotton',name:'Cotton Cloth',emoji:'🌸',buy:80,sell:128,desc:'Mass produced'},
+      {id:'oil',name:'Crude Oil',emoji:'🛢️',buy:200,sell:320,desc:'New energy source'},
+      {id:'rubber',name:'Rubber',emoji:'🌿',buy:150,sell:240,desc:'Built on colonial extraction'},
+      {id:'iron',name:'Iron Rails',emoji:'🛤️',buy:100,sell:160,desc:'Railways connect nations'},
+    ],
+    buildings:[
+      {id:'factory',name:'Steam Factory',cost:15000,income:900,emoji:'🏭',desc:'Mass production'},
+      {id:'railway',name:'Railway Station',cost:12000,income:750,emoji:'🚂',desc:'Transport network'},
+      {id:'mill',name:'Textile Mill',cost:10000,income:620,emoji:'🏭',desc:'Cotton processed by steam'},
+      {id:'bank',name:'Industrial Bank',cost:18000,income:1100,emoji:'🏦',desc:'Capital and stock market'},
+    ],
+    locations:['factory','railway','mill','bank','slums'],
+    artifacts:[{name:'Pocket Telegraph Code Book',emoji:'📓',desc:'Morse code reference for telegraph operators'},{name:'Daguerreotype Photo',emoji:'📷',desc:'The first practical photographs, c.1840'},{name:'Gramophone',emoji:'🎶',desc:'First device to record and replay sound'}],
+  },
+  {
+    id:'modern', name:'Modern Era', year:'1960 CE', num:6,
+    sky:'#080e1a', horizon:'#101828', ground:'#2a2a2a', water:'#0d1e35',
+    accent:'#3a9ad4', threshold:700000,
+    vehicle:{id:'car', name:'Automobile', emoji:'🚗', speedMult:5, desc:'Cars give personal freedom of movement for the masses.'},
+    clothing:{name:'Suit & Dress', emoji:'👗', desc:'Mass fashion via department stores; television shapes trends.'},
+    food:[
+      {name:'TV Dinner', emoji:'🍽️', desc:'Frozen convenience food for busy families'},
+      {name:'Hamburger', emoji:'🍔', desc:'Fast food chains spread across the country'},
+      {name:'Cola', emoji:'🥤', desc:'Global soft drink brands emerge'},
+      {name:'Supermarket Produce', emoji:'🥬', desc:'Year-round variety via refrigerated trucking'},
+    ],
+    fire:{method:'Electric & gas stoves', desc:'Open fire is replaced by controlled electric and gas heating in homes.'},
+    animals:[
+      {name:'Family Dog', emoji:'🐕', role:'Pets become common in suburban households'},
+      {name:'Lab Rats', emoji:'🐀', role:'Critical to medical and scientific research'},
+      {name:'Dairy Cattle', emoji:'🐄', role:'Industrial farming scales up food production'},
+    ],
+    dailyLife:'A suburban family eats dinner together watching the evening news. Office workers commute by car to skyscrapers downtown. Women increasingly enter the workforce, challenging old norms. Civil rights marches demand equality. The Cold War means children practice nuclear drills in school. Television unites the nation around shared moments — moon landings, assassinations, sitcoms.',
+    ambience:'TV broadcasts moon landing live. Cold War tensions peak. Civil rights marches fill the streets.',
+    historicalFact:'1900–1970 CE: Two World Wars. The atom bomb. Decolonization. Civil rights. Moon landing. Television. The computer is born. Average life expectancy doubles from 35 to 70.',
+    npcs:[
+      {id:'n1',name:'Scientist',emoji:'🔬',role:'Scientist',x:280,y:300,dialog:['We put a man on the moon!','DNA is the code of all life.']},
+      {id:'n2',name:'Civil Rights Leader',emoji:'✊',role:'Activist',x:180,y:325,dialog:['Equality is not negotiable.','We shall overcome — not someday, now.']},
+      {id:'n3',name:'Engineer',emoji:'💻',role:'Engineer',x:400,y:310,dialog:['ENIAC fills this room — future ones fit your hand.','Satellites now orbit the Earth.']},
+      {id:'n4',name:'TV Reporter',emoji:'📺',role:'Reporter',x:350,y:345,dialog:['60 million watched the moon landing live.','Television shapes what people believe.']},
+    ],
+    goods:[
+      {id:'cars',name:'Automobiles',emoji:'🚗',buy:500,sell:780,desc:'Mass mobility'},
+      {id:'electronics',name:'Electronics',emoji:'📺',buy:300,sell:470,desc:'TVs and early computers'},
+      {id:'petrol',name:'Petroleum',emoji:'⛽',buy:250,sell:390,desc:'Oil economy dominates'},
+      {id:'medicine',name:'Antibiotics',emoji:'💊',buy:180,sell:280,desc:'Life expectancy doubles'},
+      {id:'plastics',name:'Plastics',emoji:'🧴',buy:150,sell:235,desc:'Cheap and revolutionary'},
+      {id:'aerospace',name:'Aerospace Parts',emoji:'✈️',buy:600,sell:940,desc:'Jet age shrinks the world'},
+    ],
+    buildings:[
+      {id:'skyscraper',name:'Skyscraper',cost:50000,income:3000,emoji:'🏙️',desc:'Corporate offices'},
+      {id:'airport',name:'International Airport',cost:60000,income:3500,emoji:'✈️',desc:'Global travel in hours'},
+      {id:'university',name:'University',cost:40000,income:2400,emoji:'🎓',desc:'Science and research'},
+      {id:'mall',name:'Shopping Mall',cost:35000,income:2100,emoji:'🏬',desc:'Consumer culture born'},
+    ],
+    locations:['skyscraper','mall','university','suburbs','airport'],
+    artifacts:[{name:'Rotary Telephone',emoji:'☎️',desc:'Connects homes directly — revolutionary in 1960'},{name:'Transistor Radio',emoji:'📻',desc:'Portable music and news for the first time'},{name:'Polaroid Camera',emoji:'📸',desc:'Instant photos — no darkroom needed'}],
+  },
+  {
+    id:'digital', name:'Digital Age', year:'2024 CE', num:7,
+    sky:'#03080f', horizon:'#060d18', ground:'#1a1a1a', water:'#080e1a',
+    accent:'#00c8ff', threshold:Infinity,
+    vehicle:{id:'ev', name:'Electric Vehicle', emoji:'🛵', speedMult:6, desc:'EVs, e-bikes, and ride-share apps reshape urban transport.'},
+    clothing:{name:'Streetwear / Smart Fabric', emoji:'🧢', desc:'Fast fashion and tech-integrated wearables track your every step.'},
+    food:[
+      {name:'Delivery App Meal', emoji:'🍱', desc:'Ordered on a phone, delivered by app-dispatched rider'},
+      {name:'Plant-Based Burger', emoji:'🌱', desc:'Lab-engineered meat alternatives gain popularity'},
+      {name:'Energy Drink', emoji:'🥤', desc:'Fuels the always-on digital workforce'},
+      {name:'Meal Kit Subscription', emoji:'📦', desc:'Pre-portioned ingredients delivered weekly'},
+    ],
+    fire:{method:'Induction & smart stoves', desc:'Cooking is now app-controlled; even fire is digitized and optimized.'},
+    animals:[
+      {name:'Service Dog', emoji:'🐕‍🦺', role:'Trained for medical and accessibility support'},
+      {name:'Drone "Birds"', emoji:'🛸', role:'Delivery and surveillance fill the skies'},
+      {name:'Lab-Grown Cell Cultures', emoji:'🧫', role:'Cultivated meat research, replacing live animals'},
+    ],
+    dailyLife:'A knowledge worker wakes to a smartphone alarm, checks 40 notifications before breakfast. Remote work blurs the line between home and office. Social media algorithms shape political opinion and self-image for billions. AI assistants draft emails, write code, and generate art. Climate anxiety is widespread among young people. A video can reach a billion views in days. Loneliness rises even as "connection" is constant.',
+    ambience:'5G signals pulse through glass towers. AI writes code. Delivery drones cross the sky.',
+    historicalFact:'1970–2024 CE: The Internet connects 5 billion people. Smartphones put a supercomputer in every pocket. AI systems now exceed human performance in many domains. Climate crisis accelerates. 8 billion people — never more prosperous, never more at risk.',
+    npcs:[
+      {id:'n1',name:'Software Engineer',emoji:'💻',role:'Engineer',x:280,y:305,dialog:['I shipped code that 200 million use today.','AI is writing half my code now.']},
+      {id:'n2',name:'Content Creator',emoji:'📱',role:'Creator',x:180,y:330,dialog:['30 million subscribers — no publisher needed.','The algorithm decides what the world sees.']},
+      {id:'n3',name:'Climate Scientist',emoji:'🌍',role:'Scientist',x:400,y:315,dialog:['1.5°C is the line we cannot cross.','Renewables are now cheaper than fossil fuels!']},
+      {id:'n4',name:'AI Researcher',emoji:'🤖',role:'Researcher',x:340,y:290,dialog:['GPT-4 passed the bar exam. Think about that.','Alignment is the most important problem in history.']},
+    ],
+    goods:[
+      {id:'data',name:'User Data',emoji:'💾',buy:800,sell:1280,desc:'21st century oil'},
+      {id:'ai_models',name:'AI Models',emoji:'🤖',buy:2000,sell:3200,desc:'Intelligence as a service'},
+      {id:'biotech',name:'Biotech',emoji:'🧬',buy:1200,sell:1920,desc:'Gene editing & longevity'},
+      {id:'renewables',name:'Clean Energy',emoji:'⚡',buy:600,sell:960,desc:'Post-fossil future'},
+      {id:'crypto',name:'Cryptocurrency',emoji:'₿',buy:1500,sell:2400,desc:'Decentralized finance'},
+      {id:'chips',name:'Semiconductors',emoji:'🔬',buy:900,sell:1440,desc:'Most strategic tech in the world'},
+    ],
+    buildings:[
+      {id:'datacenter',name:'Data Center',cost:200000,income:12000,emoji:'🖥️',desc:'Cloud and AI compute'},
+      {id:'solarf',name:'Solar Farm',cost:150000,income:9000,emoji:'☀️',desc:'Renewable energy at scale'},
+      {id:'megaplex',name:'Smart City Block',cost:180000,income:11000,emoji:'🌃',desc:'Integrated digital living'},
+      {id:'spaceport',name:'Spaceport',cost:300000,income:18000,emoji:'🚀',desc:'Off-world economy begins'},
+    ],
+    locations:['datacenter','smartcity','spaceport','campus','startuphub'],
+    artifacts:[{name:'Smartphone',emoji:'📱',desc:'A supercomputer, camera, and global network in your pocket'},{name:'AI Assistant',emoji:'🤖',desc:'Writes, plans, and answers instantly'},{name:'VR Headset',emoji:'🥽',desc:'Steps into fully simulated digital worlds'}],
+  },
+];
+window.ERAS = ERAS;
+
+// ---------- WORLD REGIONS (expanded, real-world inspired) ----------
+const REGIONS = [
+  {id:'egypt',name:'Egypt',emoji:'🏜️',continent:'Africa',mapX:54,mapY:42,bonus:0.15,bonusLabel:'Trade Routes +15%'},
+  {id:'mesopotamia',name:'Mesopotamia (Iraq)',emoji:'🏛️',continent:'Middle East',mapX:58,mapY:39,bonus:0.20,bonusLabel:'Agriculture +20%'},
+  {id:'china',name:'China',emoji:'🐉',continent:'Asia',mapX:76,mapY:38,bonus:0.18,bonusLabel:'Production +18%'},
+  {id:'rome',name:'Italy / Rome',emoji:'🦁',continent:'Europe',mapX:48,mapY:36,bonus:0.15,bonusLabel:'Culture +15%'},
+  {id:'greece',name:'Greece',emoji:'🏺',continent:'Europe',mapX:50,mapY:39,bonus:0.16,bonusLabel:'Philosophy +16%'},
+  {id:'maya',name:'Mexico (Maya)',emoji:'🌴',continent:'Americas',mapX:21,mapY:48,bonus:0.20,bonusLabel:'Agriculture +20%'},
+  {id:'india',name:'India',emoji:'🌺',continent:'Asia',mapX:67,mapY:46,bonus:0.22,bonusLabel:'Spice Trade +22%'},
+  {id:'scandinavia',name:'Scandinavia',emoji:'❄️',continent:'Europe',mapX:50,mapY:24,bonus:0.18,bonusLabel:'Exploration +18%'},
+  {id:'westafrica',name:'West Africa (Mali)',emoji:'🥁',continent:'Africa',mapX:43,mapY:52,bonus:0.20,bonusLabel:'Gold Trade +20%'},
+  {id:'persia',name:'Iran (Persia)',emoji:'🌙',continent:'Middle East',mapX:62,mapY:41,bonus:0.17,bonusLabel:'Silk Road +17%'},
+  {id:'aztec',name:'Mexico (Aztec)',emoji:'☀️',continent:'Americas',mapX:19,mapY:46,bonus:0.21,bonusLabel:'Tribute +21%'},
+  {id:'japan',name:'Japan',emoji:'⛩️',continent:'Asia',mapX:81,mapY:37,bonus:0.19,bonusLabel:'Craftsmanship +19%'},
+  {id:'mongolia',name:'Mongolia',emoji:'🐎',continent:'Asia',mapX:72,mapY:32,bonus:0.23,bonusLabel:'Conquest +23%'},
+  {id:'peru',name:'Peru (Inca)',emoji:'🦙',continent:'Americas',mapX:24,mapY:60,bonus:0.19,bonusLabel:'Mountain Gold +19%'},
+  {id:'turkey',name:'Turkey (Ottoman)',emoji:'🕌',continent:'Middle East',mapX:54,mapY:38,bonus:0.20,bonusLabel:'Trade Hub +20%'},
+  {id:'ethiopia',name:'Ethiopia (Axum)',emoji:'⛪',continent:'Africa',mapX:57,mapY:55,bonus:0.18,bonusLabel:'Ancient Trade +18%'},
+  {id:'britain',name:'Britain',emoji:'🏴',continent:'Europe',mapX:45,mapY:30,bonus:0.20,bonusLabel:'Naval Power +20%'},
+  {id:'france',name:'France',emoji:'🇫🇷',continent:'Europe',mapX:46,mapY:33,bonus:0.17,bonusLabel:'Art & Wine +17%'},
+  {id:'spain',name:'Spain',emoji:'🇪🇸',continent:'Europe',mapX:43,mapY:38,bonus:0.18,bonusLabel:'Conquest Gold +18%'},
+  {id:'usa',name:'United States',emoji:'🇺🇸',continent:'Americas',mapX:17,mapY:36,bonus:0.22,bonusLabel:'Industry +22%'},
+  {id:'brazil',name:'Brazil',emoji:'🇧🇷',continent:'Americas',mapX:28,mapY:58,bonus:0.19,bonusLabel:'Resources +19%'},
+  {id:'nigeria',name:'Nigeria',emoji:'🇳🇬',continent:'Africa',mapX:46,mapY:50,bonus:0.20,bonusLabel:'Population +20%'},
+  {id:'southafrica',name:'South Africa',emoji:'🇿🇦',continent:'Africa',mapX:51,mapY:68,bonus:0.18,bonusLabel:'Minerals +18%'},
+  {id:'australia',name:'Australia',emoji:'🇦🇺',continent:'Oceania',mapX:84,mapY:65,bonus:0.17,bonusLabel:'Isolation Bonus +17%'},
+  {id:'russia',name:'Russia',emoji:'🇷🇺',continent:'Europe/Asia',mapX:66,mapY:25,bonus:0.20,bonusLabel:'Vast Territory +20%'},
+  {id:'korea',name:'Korea',emoji:'🇰🇷',continent:'Asia',mapX:78,mapY:36,bonus:0.19,bonusLabel:'Innovation +19%'},
+  {id:'indonesia',name:'Indonesia',emoji:'🇮🇩',continent:'Asia',mapX:76,mapY:55,bonus:0.21,bonusLabel:'Spice Islands +21%'},
+  {id:'canada',name:'Canada',emoji:'🇨🇦',continent:'Americas',mapX:18,mapY:24,bonus:0.18,bonusLabel:'Resources +18%'},
+];
+window.REGIONS = REGIONS;
+
+console.log('CHEXT era & world data loaded —', ERAS.length, 'eras,', REGIONS.length, 'regions');
+
+
+// ============================================================
+// CHEXT — GAME PAGES — by Rabi
+// Main Menu, Location Select, World (walkable), Trade, Build,
+// Daily Life, Stats, Admin (login-gated)
+// ============================================================
+
+let GS = null; // game state
+let qtySel = 1;
+let player = {x:300,y:320,tx:300,ty:320,moving:false,speed:2.2};
+let npcLive = [];
+let frame = 0;
+
+// ---------- MAIN MENU ----------
+PageStack.register('mainmenu', {
+  title:'',
+  render(body){
+    body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:24px;">
+        <div class="logo-big">⚔ CHEXT</div>
+        <div class="tagline">Living Civilization · 8 Eras of Humanity</div>
+        <div class="by-rabi">created by Rabi</div>
+        <div class="menu-list">
+          <button class="btn full" onclick="PageStack.go('locationselect')">▶ New Civilization</button>
+          <button class="btn full secondary" onclick="continueGame()">⏯ Continue</button>
+          <button class="btn full secondary" onclick="PageStack.go('howtoplay')">❔ How To Play</button>
+          <button class="btn full secondary" onclick="PageStack.go('settings')">⚙ Settings</button>
+          <button class="btn full secondary" onclick="PageStack.go('adminlogin')" style="border-color:#555;color:#888;">🔐 Admin</button>
+        </div>
+      </div>`;
+  }
+});
+
+function continueGame(){
+  const saved = Store.get('savegame', null);
+  if(!saved){ showToast('No saved game found','error'); return; }
+  GS = saved;
+  npcLive = ERAS[GS.eraIndex].npcs.map(n=>({...n, dx:(Math.random()-0.5)*0.8, tick:0}));
+  PageStack.go('world');
+}
+window.continueGame = continueGame;
+
+// ---------- HOW TO PLAY ----------
+PageStack.register('howtoplay', {
+  title:'How To Play',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">🎮 Controls</div>
+        <p style="font-size:13px;line-height:1.7;">• Move: WASD or Arrow Keys, or tap/click anywhere in the world<br>
+        • Talk to people: walk close and press <b>E</b>, or tap them directly<br>
+        • Use the bottom tab bar to open Trade, Build, Map, Stats<br>
+        • Back / Home / Forward buttons at the top of every page work like a browser</p>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">🌍 The Goal</div>
+        <p style="font-size:13px;line-height:1.7;">Guide your civilization from the Stone Age to the Digital Age. Trade goods, build structures for income, and accumulate enough wealth to advance through all 8 eras of human history.</p>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">🔊 Sound & Feel</div>
+        <p style="font-size:13px;line-height:1.7;">Sound effects play for actions like trading, building, and walking. On supported phones, key actions trigger a short vibration. Toggle these in Settings.</p>
+      </div>
+    </div>`;
+  }
+});
+
+// ---------- SETTINGS ----------
+PageStack.register('settings', {
+  title:'Settings',
+  render(body){
+    const vibOn = Store.get('vibrationOn', true);
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <div class="toggle-row"><span>Sound Effects</span><div class="toggle ${sfxOn?'on':''}" id="toggleSfx" onclick="toggleSetting('sfx')"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span>Vibration</span><div class="toggle ${vibOn?'on':''}" id="toggleVib" onclick="toggleSetting('vib')"><div class="toggle-knob"></div></div></div>
+      </div>
+      <div class="card">
+        <button class="btn full secondary" onclick="if(confirm('Erase your saved civilization?')){Store.remove('savegame');showToast('Save cleared');}">🗑 Clear Saved Game</button>
+      </div>
+    </div>`;
+  }
+});
+function toggleSetting(type){
+  if(type==='sfx'){ sfxOn=!sfxOn; document.getElementById('toggleSfx').classList.toggle('on',sfxOn); Store.set('sfxOn',sfxOn); }
+  if(type==='vib'){ const v=!Store.get('vibrationOn',true); Store.set('vibrationOn',v); document.getElementById('toggleVib').classList.toggle('on',v); }
+  playSfx('click');
+}
+window.toggleSetting = toggleSetting;
+
+// ---------- ADMIN LOGIN ----------
+PageStack.register('adminlogin', {
+  title:'Admin Login',
+  render(body){
+    body.innerHTML = `<div class="login-box">
+      <div style="text-align:center;font-size:32px;margin-bottom:6px;">🔐</div>
+      <div style="text-align:center;font-weight:700;color:var(--gold);margin-bottom:18px;">Admin Access</div>
+      <input class="input-field" id="adminUser" placeholder="Username" autocomplete="off">
+      <input class="input-field" id="adminPass" placeholder="Password" type="password" autocomplete="off">
+      <button class="btn full" onclick="tryAdminLogin()">Log In</button>
+      <div id="adminError" style="color:#e04040;font-size:12px;text-align:center;margin-top:10px;"></div>
+    </div>`;
+  }
+});
+function tryAdminLogin(){
+  const u = document.getElementById('adminUser').value.trim();
+  const p = document.getElementById('adminPass').value.trim();
+  const savedCreds = Store.get('adminCreds', {user:'Rabi', pass:'3400'});
+  if(u===savedCreds.user && p===savedCreds.pass){
+    Store.set('isAdmin', true);
+    playSfx('success'); vibrate(100);
+    PageStack.go('adminpanel');
+  } else {
+    document.getElementById('adminError').textContent = 'Incorrect username or password.';
+    playSfx('error');
+  }
+}
+window.tryAdminLogin = tryAdminLogin;
+
+// ---------- ADMIN PANEL ----------
+PageStack.register('adminpanel', {
+  title:'Admin Panel',
+  render(body){
+    if(!Store.get('isAdmin', false)){ PageStack.go('adminlogin'); return; }
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">👋 Welcome, Rabi</div>
+        <p style="font-size:12px;opacity:0.6;">Edit the game, manage your build, and export copies for other players.</p>
+      </div>
+      <div class="menu-list" style="max-width:none;">
+        <button class="btn full" onclick="PageStack.go('admincreds')">🔑 Change Login</button>
+        <button class="btn full" onclick="PageStack.go('admineditgame')">✏️ Edit Game Values</button>
+        <button class="btn full" onclick="PageStack.go('adminwidgets')">🧩 Custom Widgets</button>
+        <button class="btn full" onclick="PageStack.go('adminexport')">📤 Export / Share</button>
+        <button class="btn full" onclick="PageStack.go('adminlog')">📊 Activity Log</button>
+        <button class="btn full secondary" onclick="Store.set('isAdmin',false);PageStack.go('mainmenu');">Log Out</button>
+      </div>
+    </div>`;
+  }
+});
+
+// --- Change credentials (own page) ---
+PageStack.register('admincreds', {
+  title:'Change Login',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <input class="input-field" id="newUser" placeholder="New username">
+        <input class="input-field" id="newPass" placeholder="New password" type="password">
+        <button class="btn full" onclick="updateAdminCreds()">Update Login</button>
+      </div>
+    </div>`;
+  }
+});
+function updateAdminCreds(){
+  const u=document.getElementById('newUser').value.trim();
+  const p=document.getElementById('newPass').value.trim();
+  if(!u||!p){ showToast('Fill both fields','error'); return; }
+  Store.set('adminCreds',{user:u,pass:p});
+  showToast('Login updated','success'); playSfx('success');
+  logActivity('Admin credentials changed');
+}
+window.updateAdminCreds = updateAdminCreds;
+
+// --- Edit game values (own page) — real editing of live ERAS data ---
+PageStack.register('admineditgame', {
+  title:'Edit Game Values',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <p style="font-size:11px;opacity:0.5;margin-bottom:10px;">Select an era to edit its goods, buildings, and threshold. Changes apply immediately and save to this device.</p>
+      <div id="eraEditList"></div>
+    </div>`;
+    const list = document.getElementById('eraEditList');
+    list.innerHTML = ERAS.map((e,i)=>`<div class="list-item" onclick="PageStack.go('admineditera',{eraIndex:${i}})">
+      <span class="list-emoji">🌍</span>
+      <div class="list-text"><div class="list-title">${e.name}</div><div class="list-sub">${e.goods.length} goods · ${e.buildings.length} buildings · threshold ${e.threshold===Infinity?'∞':fmt(e.threshold)}¢</div></div>
+      <span class="list-chevron">›</span>
+    </div>`).join('');
+  }
+});
+
+PageStack.register('admineditera', {
+  title:'Edit Era',
+  render(body, params){
+    const i = params?.eraIndex ?? 0;
+    const era = ERAS[i];
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">${era.name}</div>
+        <label style="font-size:11px;opacity:0.6;">Wealth Threshold to Advance</label>
+        <input class="input-field" id="editThreshold" value="${era.threshold===Infinity?'':era.threshold}" placeholder="Leave blank for final era (∞)">
+        <button class="btn full" onclick="saveEraThreshold(${i})">Save Threshold</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:10px;">➕ Add Building to ${era.name}</div>
+        <input class="input-field" id="newBName" placeholder="Building name">
+        <input class="input-field" id="newBEmoji" placeholder="Emoji (e.g. 🏗)">
+        <input class="input-field" id="newBCost" placeholder="Cost (coins)" type="number">
+        <input class="input-field" id="newBIncome" placeholder="Income per turn" type="number">
+        <input class="input-field" id="newBDesc" placeholder="Description">
+        <button class="btn full" onclick="addBuildingToEra(${i})">Add Building</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:10px;">➕ Add NPC to ${era.name}</div>
+        <input class="input-field" id="newNName" placeholder="NPC name">
+        <input class="input-field" id="newNEmoji" placeholder="Emoji">
+        <input class="input-field" id="newNRole" placeholder="Role (e.g. Trader)">
+        <input class="input-field" id="newNDialog" placeholder="Dialogue line">
+        <button class="btn full" onclick="addNpcToEra(${i})">Add NPC</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">Current Buildings</div>
+        <div id="currentBuildings">${era.buildings.map((b,bi)=>`<div class="list-item" style="cursor:default;"><span class="list-emoji">${b.emoji}</span><div class="list-text"><div class="list-title">${b.name}</div><div class="list-sub">${fmt(b.cost)}¢ · +${b.income}¢/turn</div></div><span class="list-chevron" style="cursor:pointer;opacity:0.6;" onclick="removeBuildingFromEra(${i},${bi})">✕</span></div>`).join('')}</div>
+      </div>
+    </div>`;
+  }
+});
+function saveEraThreshold(i){
+  const val = document.getElementById('editThreshold').value.trim();
+  ERAS[i].threshold = val==='' ? Infinity : parseInt(val);
+  showToast('Threshold updated','success'); playSfx('success');
+  logActivity(`Edited ${ERAS[i].name} threshold to ${val||'∞'}`);
+}
+window.saveEraThreshold = saveEraThreshold;
+function addBuildingToEra(i){
+  const name=document.getElementById('newBName').value.trim();
+  const emoji=document.getElementById('newBEmoji').value.trim()||'🏗';
+  const cost=parseInt(document.getElementById('newBCost').value)||100;
+  const income=parseInt(document.getElementById('newBIncome').value)||5;
+  const desc=document.getElementById('newBDesc').value.trim()||'Custom building';
+  if(!name){ showToast('Name required','error'); return; }
+  const id = 'custom_'+Date.now();
+  ERAS[i].buildings.push({id,name,emoji,cost,income,desc});
+  playSfx('build'); vibrate(50); showToast(`Added ${name} to ${ERAS[i].name}`,'success');
+  logActivity(`Admin added building "${name}" to ${ERAS[i].name}`);
+  PageStack._render('admineditera',{eraIndex:i});
+}
+window.addBuildingToEra = addBuildingToEra;
+function removeBuildingFromEra(i,bi){
+  ERAS[i].buildings.splice(bi,1);
+  playSfx('click'); showToast('Building removed','info');
+  PageStack._render('admineditera',{eraIndex:i});
+}
+window.removeBuildingFromEra = removeBuildingFromEra;
+function addNpcToEra(i){
+  const name=document.getElementById('newNName').value.trim();
+  const emoji=document.getElementById('newNEmoji').value.trim()||'🧑';
+  const role=document.getElementById('newNRole').value.trim()||'Villager';
+  const dialog=document.getElementById('newNDialog').value.trim()||'Hello, traveler.';
+  if(!name){ showToast('Name required','error'); return; }
+  const id = 'customnpc_'+Date.now();
+  ERAS[i].npcs.push({id,name,emoji,role,x:rnd(100,500),y:rnd(290,370),dialog:[dialog]});
+  playSfx('build'); vibrate(50); showToast(`Added NPC ${name}`,'success');
+  logActivity(`Admin added NPC "${name}" to ${ERAS[i].name}`);
+  PageStack._render('admineditera',{eraIndex:i});
+}
+window.addNpcToEra = addNpcToEra;
+
+// --- Widgets (own page) ---
+PageStack.register('adminwidgets', {
+  title:'Custom Widgets',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <p style="font-size:11px;opacity:0.5;margin-bottom:8px;">Add a button players see in their World tab. Tapping it shows your message — runs safely, no device access.</p>
+        <input class="input-field" id="widgetLabel" placeholder="Button label">
+        <input class="input-field" id="widgetMsg" placeholder="Message to show when tapped">
+        <button class="btn full" onclick="addWidget()">Add Widget</button>
+      </div>
+      <div id="widgetList"></div>
+    </div>`;
+    renderWidgetList();
+  }
+});
+function addWidget(){
+  const label=document.getElementById('widgetLabel').value.trim();
+  const msg=document.getElementById('widgetMsg').value.trim();
+  if(!label||!msg){ showToast('Fill both fields','error'); return; }
+  const widgets=Store.get('customWidgets',[]);
+  widgets.push({id:'w'+Date.now(),label,msg});
+  Store.set('customWidgets',widgets);
+  document.getElementById('widgetLabel').value=''; document.getElementById('widgetMsg').value='';
+  renderWidgetList(); playSfx('build'); showToast('Widget added','success');
+  logActivity(`Admin added widget "${label}"`);
+}
+window.addWidget = addWidget;
+function renderWidgetList(){
+  const el=document.getElementById('widgetList'); if(!el) return;
+  const widgets=Store.get('customWidgets',[]);
+  el.innerHTML = widgets.length ? widgets.map(w=>`<div class="list-item" style="cursor:default;"><span class="list-emoji">🧩</span><div class="list-text"><div class="list-title">${w.label}</div><div class="list-sub">${w.msg}</div></div><span class="list-chevron" onclick="removeWidget('${w.id}')" style="opacity:0.6;cursor:pointer;">✕</span></div>`).join('') : '<p style="font-size:11px;opacity:0.4;">No widgets yet.</p>';
+}
+function removeWidget(id){
+  let widgets=Store.get('customWidgets',[]);
+  widgets=widgets.filter(w=>w.id!==id);
+  Store.set('customWidgets',widgets);
+  renderWidgetList(); playSfx('click');
+}
+window.removeWidget = removeWidget;
+
+// --- Activity log (own page) ---
+PageStack.register('adminlog', {
+  title:'Activity Log',
+  render(body){
+    const log=Store.get('activityLog',[]);
+    body.innerHTML = `<div class="content-pad">
+      <p style="font-size:11px;opacity:0.45;margin-bottom:10px;">Events from this browser only. A downloaded HTML file has no server, so it cannot see activity on other people's devices — this log is local to whoever is using this copy.</p>
+      <div class="card">${log.length ? log.slice().reverse().map(e=>`<div style="font-size:11px;opacity:0.7;margin-bottom:5px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:5px;">[${e.time}] ${e.text}</div>`).join('') : '<p style="opacity:0.4;font-size:12px;">No activity yet.</p>'}</div>
+      <button class="btn full secondary" onclick="Store.set('activityLog',[]);PageStack._render('adminlog');">Clear Log</button>
+    </div>`;
+  }
+});
+function logActivity(text){
+  const log=Store.get('activityLog',[]);
+  log.push({time:new Date().toLocaleTimeString(), text});
+  if(log.length>80) log.shift();
+  Store.set('activityLog',log);
+}
+window.logActivity = logActivity;
+
+// --- Export / Share (own page) ---
+PageStack.register('adminexport', {
+  title:'Export & Share',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">📤 Player Edition</div>
+        <p style="font-size:11px;opacity:0.6;line-height:1.6;margin-bottom:10px;">Creates a copy of the game with your edits baked in, watermarked "Shared by Rabi", and with the Admin button hidden — players can play but not access admin tools or edit game data. Note: once shared, a downloaded file is outside your control — if the recipient shares it further, you won't be notified or able to track it.</p>
+        <button class="btn full" onclick="exportPlayerEdition()">Generate Player Edition (.html)</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;">💾 Save File</div>
+        <button class="btn full secondary" onclick="exportSave()">Export My Save (.json)</button>
+      </div>
+    </div>`;
+  }
+});
+function exportPlayerEdition(){
+  // Marks this build as a locked player edition; the running page's own HTML is captured and re-saved
+  try{
+    const htmlClone = document.documentElement.outerHTML;
+    const watermark = `<!-- CHEXT Player Edition — Shared by Rabi — Admin disabled in this copy -->`;
+    const locked = watermark + '\n' + htmlClone.replace(/isAdmin[^,]*,?/g,'');
+    const blob = new Blob([locked], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='Chext-PlayerEdition.html'; a.click();
+    showToast('Player Edition exported','success'); playSfx('success');
+    logActivity('Exported a Player Edition build');
+  }catch(e){
+    showToast('Export failed — try saving the page manually via your browser menu','error');
+  }
+}
+window.exportPlayerEdition = exportPlayerEdition;
+function exportSave(){
+  const data = JSON.stringify(GS||{}, null, 2);
+  const blob = new Blob([data],{type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='chext-save.json'; a.click();
+  showToast('Save exported','success');
+}
+window.exportSave = exportSave;
+
+// ---------- LOCATION SELECT ----------
+PageStack.register('locationselect', {
+  title:'Choose Homeland',
+  render(body){
+    body.innerHTML = `<div class="content-pad">
+      <p style="font-size:12px;opacity:0.5;margin-bottom:12px;text-align:center;">Your location shapes trade routes and civilization strengths</p>
+      <div class="grid2" id="regionGrid"></div>
+    </div>`;
+    const grid = document.getElementById('regionGrid');
+    REGIONS.forEach(r=>{
+      const card=document.createElement('div');
+      card.className='card';
+      card.style.cssText='text-align:center;cursor:pointer;padding:12px 8px;';
+      card.innerHTML = `<div style="font-size:26px;margin-bottom:4px;">${r.emoji}</div>
+        <div style="font-weight:700;font-size:12px;">${r.name}</div>
+        <div style="font-size:10px;opacity:0.4;margin:2px 0;">${r.continent}</div>
+        <div style="font-size:10px;color:var(--gold);">${r.bonusLabel}</div>`;
+      card.onclick = ()=>{ playSfx('click'); startNewGame(r.id); };
+      grid.appendChild(card);
+    });
+  }
+});
+
+function startNewGame(regionId){
+  const region = REGIONS.find(r=>r.id===regionId);
+  const era = ERAS[0];
+  const prices = {};
+  era.goods.forEach(g=>{ prices[g.id]={buy:g.buy,sell:g.sell}; });
+  GS = {
+    regionId, regionName:region.name, regionEmoji:region.emoji, bonus:region.bonus,
+    eraIndex:0, coins:350, totalEarned:0, buildings:{}, inventory:{}, prices, turn:1,
+    log:[`⚔️ Civilization begins in ${region.name}. Lead your people through 8 eras of history.`],
+  };
+  npcLive = era.npcs.map(n=>({...n, dx:(Math.random()-0.5)*0.8, tick:0}));
+  player = {x:300,y:320,tx:300,ty:320,moving:false,speed:2.2};
+  Store.set('savegame', GS);
+  logActivity(`New game started in ${region.name}`);
+  playSfx('era'); vibrate([60,40,60]);
+  PageStack.go('world');
+}
+window.startNewGame = startNewGame;
+
+console.log('CHEXT game pages loaded — by Rabi');
+
+
+// ============================================================
+// CHEXT — WORLD PAGE — by Rabi
+// Walkable canvas world + bottom tab bar for Trade/Build/Stats/Map
+// ============================================================
+
+let worldAnimId = null;
+let worldTab = 'explore';
+let dialogTimer = null;
+
+PageStack.register('world', {
+  title:'',
+  render(body){
+    if(!GS){ PageStack.go('mainmenu'); return; }
+    const era = ERAS[GS.eraIndex];
+    body.style.display='flex'; body.style.flexDirection='column'; body.style.height='100%';
+    body.innerHTML = `
+      <div id="worldHud" style="background:rgba(0,0,0,0.6);padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:10px;flex-shrink:0;">
+        <span class="pill" style="position:static;">${era.name} · ${era.year}</span>
+        <span class="pill" style="position:static;">${GS.regionEmoji} ${GS.regionName}</span>
+        <span class="pill" style="position:static;">Turn ${GS.turn}</span>
+        <div style="flex:1;"></div>
+        <span class="pill" style="position:static;color:var(--gold);font-weight:700;font-size:13px;">${fmt(GS.coins)} ¢</span>
+      </div>
+      <div id="worldCanvasWrap">
+        <canvas id="worldCanvas"></canvas>
+        <div id="ambienceText" style="position:absolute;top:6px;left:6px;right:6px;font-size:9px;font-style:italic;opacity:0.6;pointer-events:none;background:rgba(0,0,0,0.4);padding:3px 6px;border-radius:4px;"></div>
+        <div id="dialogBubble" style="display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1.5px solid ${era.accent};border-radius:10px;padding:10px 14px;max-width:80%;text-align:center;z-index:20;"></div>
+        <button id="endTurnBtn" onclick="doEndTurn()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:1.5px solid ${era.accent};border-radius:8px;padding:6px 12px;color:${era.accent};font-weight:700;font-size:11px;">End Turn ▶</button>
+      </div>
+      <div id="bottom-tabs">
+        <button class="tab-btn active" data-tab="explore" onclick="switchWorldTab('explore')"><span class="tab-icon">🚶</span>Explore</button>
+        <button class="tab-btn" data-tab="trade" onclick="switchWorldTab('trade')"><span class="tab-icon">⚖</span>Trade</button>
+        <button class="tab-btn" data-tab="build" onclick="switchWorldTab('build')"><span class="tab-icon">🏗</span>Build</button>
+        <button class="tab-btn" data-tab="relics" onclick="switchWorldTab('relics')"><span class="tab-icon">🏺</span>Relics</button>
+        <button class="tab-btn" data-tab="dailylife" onclick="switchWorldTab('dailylife')"><span class="tab-icon">📜</span>Life</button>
+        <button class="tab-btn" data-tab="stats" onclick="switchWorldTab('stats')"><span class="tab-icon">📊</span>Stats</button>
+      </div>
+      <div id="tabPanel" style="display:none;position:absolute;bottom:64px;left:0;right:0;max-height:60vh;background:rgba(5,10,20,0.98);border-top:1.5px solid ${era.accent}55;overflow-y:auto;"></div>
+    `;
+    document.getElementById('ambienceText').textContent = era.ambience;
+    setupCanvas();
+    startWorldLoop();
+    updateNavBadge();
+  },
+  onExit(){ if(worldAnimId) cancelAnimationFrame(worldAnimId); }
+});
+
+function switchWorldTab(tab){
+  worldTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const panel = document.getElementById('tabPanel');
+  if(tab==='explore'){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  playSfx('open');
+  if(tab==='trade') renderTradePanel(panel);
+  if(tab==='build') renderBuildPanel(panel);
+  if(tab==='relics') renderRelicsPanel(panel);
+  if(tab==='dailylife') renderDailyLifePanel(panel);
+  if(tab==='stats') renderStatsPanel(panel);
+}
+window.switchWorldTab = switchWorldTab;
+
+function renderRelicsPanel(panel){
+  const era = ERAS[GS.eraIndex];
+  const collected = Store.get('relicsCollected', {});
+  panel.innerHTML = `<div class="content-pad">
+    <p style="font-size:11px;opacity:0.5;margin-bottom:10px;">Artifacts and technology that defined daily life in the ${era.name}. Tap to add to your collection.</p>
+    ${era.artifacts.map((a,i)=>{
+      const key = era.id+'_'+i;
+      const has = collected[key];
+      return `<div class="list-item" onclick="collectRelic('${key}','${a.name.replace(/'/g,"\\'")}')" style="${has?'border-color:var(--gold);':''}">
+        <span class="list-emoji">${a.emoji}</span>
+        <div class="list-text"><div class="list-title">${a.name} ${has?'<span style="color:var(--gold);font-size:10px;">✓ Collected</span>':''}</div>
+        <div class="list-sub">${a.desc}</div></div>
+      </div>`;
+    }).join('')}
+    <div class="card" style="margin-top:8px;text-align:center;">
+      <div style="font-size:11px;opacity:0.5;">Collection Progress</div>
+      <div style="font-size:18px;color:${era.accent};font-weight:700;margin-top:4px;">${Object.keys(collected).filter(k=>k.startsWith(era.id)).length} / ${era.artifacts.length}</div>
+    </div>
+  </div>`;
+}
+function collectRelic(key, name){
+  const collected = Store.get('relicsCollected', {});
+  if(collected[key]){ showToast(`Already have ${name}`,'info'); return; }
+  collected[key]=true;
+  Store.set('relicsCollected', collected);
+  playSfx('success'); vibrate([30,20,30,20,60]);
+  showToast(`🏺 Collected: ${name}`,'success');
+  logActivity(`Collected relic: ${name}`);
+  switchWorldTab('relics');
+}
+window.collectRelic = collectRelic;
+
+function updateNavBadge(){} // placeholder for future badge counts
+
+// ---------- CANVAS SETUP & LOOP ----------
+let wctx, cw, ch;
+function setupCanvas(){
+  const canvas = document.getElementById('worldCanvas');
+  const wrap = document.getElementById('worldCanvasWrap');
+  function resizeCanvas(){
+    cw = canvas.width = wrap.clientWidth;
+    ch = canvas.height = wrap.clientHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  wctx = canvas.getContext('2d');
+  canvas.addEventListener('click', handleWorldClick);
+  canvas.addEventListener('touchstart', handleWorldTouch, {passive:true});
+}
+
+function handleWorldTouch(e){
+  if(e.touches.length===0) return;
+  const r = e.target.getBoundingClientRect();
+  const tx=(e.touches[0].clientX-r.left)*(cw/r.width), ty=(e.touches[0].clientY-r.top)*(ch/r.height);
+  movePlayerTo(tx,ty);
+}
+function handleWorldClick(e){
+  const r=e.target.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(cw/r.width), my=(e.clientY-r.top)*(ch/r.height);
+  movePlayerTo(mx,my);
+}
+function movePlayerTo(mx,my){
+  // check NPC hit first
+  let hit=false;
+  npcLive.forEach(npc=>{
+    const npx=npc.x*(cw/620), npy=(my>0?ch*0.5:0)+npc.y*(ch/440)*0.01; // placeholder, recalced in draw
+  });
+  const gy = ch*0.5;
+  npcLive.forEach(npc=>{
+    const npx=npc.x*(cw/620), npy=gy+ (npc.y-310)*(ch/440);
+    if(Math.hypot(mx-npx,my-npy)<30){ talkToNpc(npc); hit=true; }
+  });
+  if(hit) return;
+  player.tx = mx/(cw/620);
+  player.ty = Math.max(240, Math.min(390, (my-gy)/(ch/440) + 310));
+  playSfx('step');
+}
+
+function talkToNpc(npc){
+  const idx = rnd(0, npc.dialog.length-1);
+  const line = npc.dialog[idx];
+  const bubble = document.getElementById('dialogBubble');
+  bubble.innerHTML = `<div style="color:var(--gold);font-weight:700;font-size:12px;margin-bottom:4px;">${npc.emoji} ${npc.name} <span style="opacity:0.5;font-size:10px;">🔊 speaking...</span></div><div style="font-style:italic;font-size:13px;">"${line}"</div>`;
+  bubble.style.display='block';
+  clearTimeout(dialogTimer);
+  dialogTimer = setTimeout(()=>{ bubble.style.display='none'; }, 5500);
+  playSfx('chat'); vibrate(40);
+  // Real speech synthesis — pitch varies slightly per NPC for character
+  const pitch = 0.85 + (npc.id ? (npc.id.charCodeAt(1)%10)/20 : 0);
+  speak(line, pitch, 0.95);
+  logActivity(`Talked to ${npc.name}`);
+}
+window.talkToNpc = talkToNpc;
+
+const keysDown = {};
+window.addEventListener('keydown', e=>{
+  keysDown[e.key]=true;
+  if((e.key==='e'||e.key==='E') && GS){
+    npcLive.forEach(npc=>{ if(Math.hypot(player.x-npc.x,player.y-npc.y)<55) talkToNpc(npc); });
+  }
+});
+window.addEventListener('keyup', e=>{ keysDown[e.key]=false; });
+
+function startWorldLoop(){
+  function loop(){
+    frame++;
+    if(document.getElementById('worldCanvas') && GS){
+      stepPlayer();
+      stepNpcs();
+      drawWorld();
+    }
+    worldAnimId = requestAnimationFrame(loop);
+  }
+  worldAnimId = requestAnimationFrame(loop);
+}
+
+function stepPlayer(){
+  const era = ERAS[GS.eraIndex];
+  const spd = player.speed * (era.vehicle.speedMult>2 ? 1.6 : 1);
+  if(keysDown['ArrowLeft']||keysDown['a']||keysDown['A']){ player.x=Math.max(20,player.x-spd); player.tx=player.x; player.moving=true; }
+  if(keysDown['ArrowRight']||keysDown['d']||keysDown['D']){ player.x=Math.min(600,player.x+spd); player.tx=player.x; player.moving=true; }
+  if(keysDown['ArrowUp']||keysDown['w']||keysDown['W']){ player.y=Math.max(240,player.y-spd); player.ty=player.y; player.moving=true; }
+  if(keysDown['ArrowDown']||keysDown['s']||keysDown['S']){ player.y=Math.min(390,player.y+spd); player.ty=player.y; player.moving=true; }
+  const dx=player.tx-player.x, dy=player.ty-player.y, dist=Math.hypot(dx,dy);
+  if(dist>3){ player.x+=dx/dist*spd; player.y+=dy/dist*spd; player.moving=true; if(frame%10===0) playSfx('step'); }
+  else player.moving=false;
+}
+function stepNpcs(){
+  npcLive.forEach(npc=>{
+    npc.tick++;
+    if(npc.tick>100+Math.random()*60){ npc.dx=(Math.random()-0.5)*1; npc.tick=0; }
+    npc.x += npc.dx;
+    if(npc.x<60){ npc.x=60; npc.dx=Math.abs(npc.dx); }
+    if(npc.x>560){ npc.x=560; npc.dx=-Math.abs(npc.dx); }
+  });
+}
+
+function drawWorld(){
+  const era = ERAS[GS.eraIndex];
+  wctx.clearRect(0,0,cw,ch);
+  const skyH = ch*0.5;
+  const skyG = wctx.createLinearGradient(0,0,0,skyH);
+  skyG.addColorStop(0,era.sky); skyG.addColorStop(1,era.horizon);
+  wctx.fillStyle = skyG; wctx.fillRect(0,0,cw,skyH);
+  // stars or sun
+  if(era.num<4||era.num>5){
+    for(let i=0;i<40;i++){
+      const sx=(i*137)%cw, sy=(i*97)%(skyH*0.8);
+      wctx.fillStyle = `rgba(255,255,255,${0.1+(i%5)*0.06})`;
+      wctx.beginPath(); wctx.arc(sx,sy,i%7===0?1.5:0.8,0,Math.PI*2); wctx.fill();
+    }
+  }
+  if(era.num<=4){
+    wctx.fillStyle='rgba(255,242,200,0.85)';
+    wctx.beginPath(); wctx.arc(cw*0.85,40,18,0,Math.PI*2); wctx.fill();
+  }
+  // ground
+  const gy = skyH;
+  const gG = wctx.createLinearGradient(0,gy,0,ch);
+  gG.addColorStop(0,era.ground); gG.addColorStop(1,era.ground+'99');
+  wctx.fillStyle = gG; wctx.fillRect(0,gy,cw,ch-gy);
+  // water strip
+  wctx.fillStyle = era.water;
+  wctx.fillRect(0,ch-26,cw,26);
+
+  // buildings
+  let bcount=0;
+  era.buildings.forEach(b=>{
+    const count = GS.buildings[b.id]||0;
+    for(let i=0;i<Math.min(count,3);i++){
+      const bx=(60+bcount*80)*(cw/620), bw=55*(cw/620), bh=46;
+      const bby=gy+30;
+      wctx.fillStyle='#3a3a4a'; wctx.fillRect(bx,bby-bh,bw,bh);
+      wctx.fillStyle='#5a4a3a';
+      wctx.beginPath(); wctx.moveTo(bx-4,bby-bh); wctx.lineTo(bx+bw/2,bby-bh-16); wctx.lineTo(bx+bw+4,bby-bh); wctx.fill();
+      wctx.fillStyle='rgba(255,220,100,0.6)';
+      for(let wy=bby-bh+6;wy<bby-6;wy+=12){ for(let wx=bx+5;wx<bx+bw-5;wx+=10){ wctx.fillRect(wx,wy,6,8); } }
+      bcount++;
+    }
+  });
+
+  // NPCs
+  npcLive.forEach((npc,i)=>{
+    const npx=npc.x*(cw/620), npy=gy+(npc.y-310)*(ch/440)*0.4+50;
+    const bob=Math.sin(frame*0.12+i)*2;
+    wctx.fillStyle='rgba(0,0,0,0.2)';
+    wctx.beginPath(); wctx.ellipse(npx,npy+18,9,3,0,0,Math.PI*2); wctx.fill();
+    const colors=['#c87820','#8a6040','#3a7a30','#9a3030'];
+    wctx.fillStyle=colors[i%colors.length];
+    wctx.beginPath(); wctx.roundRect(npx-6,npy+bob,12,12,3); wctx.fill();
+    wctx.fillStyle='#e8c090';
+    wctx.beginPath(); wctx.arc(npx,npy-3+bob,7,0,Math.PI*2); wctx.fill();
+    wctx.fillStyle='rgba(0,0,0,0.7)'; wctx.font='9px sans-serif'; wctx.textAlign='center';
+    wctx.fillText(npc.name.split(' ')[0], npx, npy-14+bob);
+    const ppx=player.x*(cw/620), ppy=gy+(player.y-310)*(ch/440)*0.4+50;
+    if(Math.hypot(ppx-npx,ppy-npy)<60){
+      wctx.fillStyle=era.accent; wctx.font='bold 10px sans-serif';
+      wctx.fillText('[E] Talk', npx, npy-26+bob);
+    }
+  });
+
+  // player
+  const ppx=player.x*(cw/620), ppy=gy+(player.y-310)*(ch/440)*0.4+50;
+  const pbob = player.moving?Math.sin(frame*0.25)*2:0;
+  wctx.fillStyle='rgba(0,0,0,0.3)';
+  wctx.beginPath(); wctx.ellipse(ppx,ppy+20,11,4,0,0,Math.PI*2); wctx.fill();
+  wctx.fillStyle='#4a7ad4';
+  wctx.beginPath(); wctx.roundRect(ppx-8,ppy+pbob,16,15,3); wctx.fill();
+  wctx.fillStyle='#f0c888';
+  wctx.beginPath(); wctx.arc(ppx,ppy-4+pbob,9,0,Math.PI*2); wctx.fill();
+  wctx.fillStyle='#3a2a10';
+  wctx.beginPath(); wctx.arc(ppx,ppy-7+pbob,9,Math.PI,0); wctx.fill();
+  wctx.fillStyle='rgba(0,0,0,0.75)'; wctx.font='9px sans-serif'; wctx.textAlign='center';
+  wctx.fillText('YOU', ppx, ppy-18+pbob);
+  // vehicle icon if moving fast
+  if(era.vehicle.id!=='foot'){
+    wctx.font='16px sans-serif';
+    wctx.fillText(era.vehicle.emoji, ppx+18, ppy-10+pbob);
+  }
+  wctx.textAlign='left';
+}
+
+// ---------- TRADE PANEL ----------
+function renderTradePanel(panel){
+  const era = ERAS[GS.eraIndex];
+  panel.innerHTML = `<div class="content-pad">
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;">
+      <span style="font-size:11px;opacity:0.5;">Qty:</span>
+      ${[1,5,10,25].map(q=>`<button class="btn secondary" style="padding:5px 10px;font-size:11px;${qtySel===q?'border-color:var(--gold);color:var(--gold);':''}" onclick="setQty(${q})">×${q}</button>`).join('')}
+    </div>
+    <div id="goodsList"></div>
+  </div>`;
+  renderGoodsList();
+}
+function setQty(q){ qtySel=q; renderGoodsList(); playSfx('click'); }
+window.setQty = setQty;
+function renderGoodsList(){
+  const era = ERAS[GS.eraIndex];
+  const el = document.getElementById('goodsList'); if(!el) return;
+  el.innerHTML = era.goods.map(g=>{
+    const bp=(GS.prices[g.id]?.buy||g.buy)*qtySel, sp=(GS.prices[g.id]?.sell||g.sell)*qtySel;
+    const own=GS.inventory[g.id]||0;
+    const canB=GS.coins>=bp, canS=own>=qtySel;
+    return `<div class="list-item" style="cursor:default;">
+      <span class="list-emoji">${g.emoji}</span>
+      <div class="list-text"><div class="list-title">${g.name}</div><div class="list-sub">${g.desc} · Own: ${own}</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn secondary" style="padding:5px 10px;font-size:10px;${canB?'border-color:#d86020;color:#f08040;':''}" ${canB?'':'disabled'} onclick="doBuy('${g.id}')">Buy ${fmt(bp)}¢</button>
+        <button class="btn secondary" style="padding:5px 10px;font-size:10px;${canS?'border-color:#30a040;color:#40d060;':''}" ${canS?'':'disabled'} onclick="doSell('${g.id}')">Sell ${fmt(sp)}¢</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function doBuy(id){
+  const era=ERAS[GS.eraIndex], g=era.goods.find(x=>x.id===id);
+  const price=(GS.prices[id]?.buy||g.buy)*qtySel;
+  if(GS.coins<price){ showToast('Not enough coins','error'); playSfx('error'); return; }
+  GS.coins-=price; GS.inventory[id]=(GS.inventory[id]||0)+qtySel;
+  GS.log.push(`Bought ${qtySel}× ${g.name}`); Store.set('savegame',GS);
+  playSfx('coin'); vibrate(30); showToast(`Bought ${qtySel}× ${g.name}`,'success');
+  renderGoodsList();
+}
+function doSell(id){
+  const era=ERAS[GS.eraIndex], g=era.goods.find(x=>x.id===id);
+  const own=GS.inventory[id]||0;
+  if(own<qtySel){ showToast('Not enough to sell','error'); playSfx('error'); return; }
+  const price=(GS.prices[id]?.sell||g.sell)*qtySel;
+  GS.coins+=price; GS.totalEarned+=price; GS.inventory[id]=own-qtySel;
+  GS.log.push(`Sold ${qtySel}× ${g.name}`); Store.set('savegame',GS);
+  playSfx('coin'); vibrate(30); showToast(`Sold ${qtySel}× ${g.name} for ${fmt(price)}¢`,'success');
+  renderGoodsList();
+}
+window.doBuy=doBuy; window.doSell=doSell;
+
+// ---------- BUILD PANEL ----------
+function renderBuildPanel(panel){
+  const era = ERAS[GS.eraIndex];
+  panel.innerHTML = `<div class="content-pad" id="buildList"></div>`;
+  renderBuildList();
+}
+function renderBuildList(){
+  const era = ERAS[GS.eraIndex];
+  const el = document.getElementById('buildList'); if(!el) return;
+  el.innerHTML = era.buildings.map(b=>{
+    const owned=GS.buildings[b.id]||0, canA=GS.coins>=b.cost;
+    const income = Math.floor(b.income*(1+GS.bonus));
+    return `<div class="list-item" style="cursor:default;">
+      <span class="list-emoji">${b.emoji}</span>
+      <div class="list-text"><div class="list-title">${b.name} ${owned>0?`<span style="color:var(--gold);font-size:10px;">×${owned}</span>`:''}</div>
+      <div class="list-sub">${b.desc} · +${income}¢/turn · ${fmt(b.cost)}¢</div></div>
+      <button class="btn" style="padding:8px 12px;font-size:11px;${canA?'':'opacity:0.3;'}" ${canA?'':'disabled'} onclick="doBuild('${b.id}')">Build</button>
+    </div>`;
+  }).join('');
+}
+function doBuild(id){
+  const era=ERAS[GS.eraIndex], b=era.buildings.find(x=>x.id===id);
+  if(GS.coins<b.cost){ showToast('Not enough coins','error'); playSfx('error'); return; }
+  GS.coins-=b.cost; GS.buildings[id]=(GS.buildings[id]||0)+1;
+  GS.log.push(`Built ${b.name}`); Store.set('savegame',GS);
+  playSfx('build'); vibrate([40,30,40]); showToast(`Built ${b.name}!`,'success');
+  renderBuildList(); logActivity(`Built ${b.name}`);
+}
+window.doBuild = doBuild;
+
+// ---------- DAILY LIFE PANEL ----------
+function renderDailyLifePanel(panel){
+  const era = ERAS[GS.eraIndex];
+  panel.innerHTML = `<div class="content-pad">
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:6px;">📜 Daily Life in ${era.name}</div>
+      <p style="font-size:12px;line-height:1.7;opacity:0.85;">${era.dailyLife}</p>
+    </div>
+    <div class="grid2">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:24px;">${era.vehicle.emoji}</div>
+        <div style="font-weight:700;font-size:12px;margin-top:4px;">${era.vehicle.name}</div>
+        <div style="font-size:10px;opacity:0.5;margin-top:3px;">${era.vehicle.desc}</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:24px;">${era.clothing.emoji}</div>
+        <div style="font-weight:700;font-size:12px;margin-top:4px;">${era.clothing.name}</div>
+        <div style="font-size:10px;opacity:0.5;margin-top:3px;">${era.clothing.desc}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:8px;">🍲 Food</div>
+      ${era.food.map(f=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;"><span style="font-size:18px;">${f.emoji}</span><div><div style="font-size:12px;font-weight:600;">${f.name}</div><div style="font-size:10px;opacity:0.5;">${f.desc}</div></div></div>`).join('')}
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:8px;">🔥 Fire & Heat</div>
+      <div style="font-size:12px;font-weight:600;">${era.fire.method}</div>
+      <div style="font-size:11px;opacity:0.5;margin-top:3px;">${era.fire.desc}</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:8px;">🐾 Animals</div>
+      ${era.animals.map(a=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;"><span style="font-size:18px;">${a.emoji}</span><div><div style="font-size:12px;font-weight:600;">${a.name}</div><div style="font-size:10px;opacity:0.5;">${a.role}</div></div></div>`).join('')}
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:6px;">🌍 Historical Context</div>
+      <p style="font-size:11px;line-height:1.6;opacity:0.7;">${era.historicalFact}</p>
+    </div>
+  </div>`;
+}
+
+// ---------- STATS PANEL ----------
+function renderStatsPanel(panel){
+  const era=ERAS[GS.eraIndex];
+  const income=era.buildings.reduce((s,b)=>s+(GS.buildings[b.id]||0)*b.income,0);
+  const invVal=era.goods.reduce((s,g)=>s+(GS.inventory[g.id]||0)*(GS.prices[g.id]?.sell||g.sell),0);
+  panel.innerHTML = `<div class="content-pad">
+    <div class="grid2">
+      <div class="card"><div style="font-size:10px;opacity:0.5;">TREASURY</div><div style="font-size:16px;font-weight:700;color:${era.accent};">${fmt(GS.coins)}¢</div></div>
+      <div class="card"><div style="font-size:10px;opacity:0.5;">TOTAL EARNED</div><div style="font-size:16px;font-weight:700;color:${era.accent};">${fmt(GS.totalEarned)}¢</div></div>
+      <div class="card"><div style="font-size:10px;opacity:0.5;">INCOME/TURN</div><div style="font-size:16px;font-weight:700;color:${era.accent};">${fmt(Math.floor(income*(1+GS.bonus)))}¢</div></div>
+      <div class="card"><div style="font-size:10px;opacity:0.5;">NET WORTH</div><div style="font-size:16px;font-weight:700;color:${era.accent};">${fmt(GS.coins+invVal)}¢</div></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:${era.accent};margin-bottom:8px;">Era Progress</div>
+      <div style="font-size:10px;opacity:0.5;margin-bottom:4px;">${fmt(GS.coins)} / ${era.threshold===Infinity?'∞':fmt(era.threshold)}¢</div>
+      <div style="height:6px;background:#ffffff15;border-radius:3px;overflow:hidden;margin-bottom:8px;">
+        <div style="height:100%;width:${era.threshold===Infinity?100:Math.min(100,(GS.coins/era.threshold)*100)}%;background:${era.accent};"></div>
+      </div>
+      ${GS.coins>=era.threshold && GS.eraIndex<ERAS.length-1 ? `<button class="btn full" onclick="doAdvanceEra()">⚡ Advance to ${ERAS[GS.eraIndex+1].name}</button>` : ''}
+    </div>
+    <div class="card">
+      ${ERAS.map((e,i)=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:5px;opacity:${i<=GS.eraIndex?1:0.3}"><span style="width:8px;height:8px;border-radius:50%;background:${i<GS.eraIndex?'#40c060':i===GS.eraIndex?e.accent:'#444'};flex-shrink:0;"></span><span style="flex:1;">${e.name}</span><span style="opacity:0.4;">${e.year}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+function doAdvanceEra(){
+  const era=ERAS[GS.eraIndex];
+  if(GS.coins<era.threshold){ showToast('Not enough wealth yet','error'); return; }
+  if(GS.eraIndex>=ERAS.length-1){ showToast('You reached the final era!','success'); return; }
+  GS.eraIndex++;
+  const next=ERAS[GS.eraIndex];
+  const np={}; next.goods.forEach(g=>{ np[g.id]={buy:g.buy,sell:g.sell}; });
+  GS.prices=np; GS.buildings={};
+  npcLive = next.npcs.map(n=>({...n,dx:(Math.random()-0.5)*0.8,tick:0}));
+  GS.log.push(`Advanced to ${next.name}`);
+  Store.set('savegame',GS); logActivity(`Advanced to ${next.name}`);
+  playSfx('era'); vibrate([80,50,80,50,120]);
+  showToast(`⚡ Welcome to the ${next.name}!`,'success');
+  document.getElementById('ambienceText').textContent = next.ambience;
+  switchWorldTab('stats');
+  // re-render hud
+  PageStack._render('world');
+}
+window.doAdvanceEra = doAdvanceEra;
+
+function doEndTurn(){
+  const era=ERAS[GS.eraIndex];
+  let income = era.buildings.reduce((s,b)=>s+(GS.buildings[b.id]||0)*b.income,0);
+  income = Math.floor(income*(1+GS.bonus));
+  era.goods.forEach(g=>{
+    const swing=rnd(-4,4);
+    GS.prices[g.id] = { buy:Math.max(2,(GS.prices[g.id]?.buy||g.buy)+swing), sell:Math.max(3,(GS.prices[g.id]?.sell||g.sell)+swing+rnd(0,3)) };
+  });
+  GS.coins+=income; GS.totalEarned+=income; GS.turn++;
+  GS.log.push(`Turn ${GS.turn}: +${income}¢`);
+  Store.set('savegame',GS);
+  playSfx('click'); showToast(`Turn ${GS.turn}: +${fmt(income)}¢ income`,'info');
+  PageStack._render('world');
+}
+window.doEndTurn = doEndTurn;
+
+console.log('CHEXT world page loaded — by Rabi');
+
+
+PageStack._render('mainmenu'); console.log('CHEXT fully loaded — by Rabi');
+</script>
+</body>
+</html>
